@@ -112,13 +112,9 @@ btn.addEventListener('click', function(e){
   var body = 'This message is from your portfolio' + '<br/> Name: ' + name + '<br/> Email: ' + email + '<br/> Mobile Number: ' + mob +' <br/> Subject: ' + sub +' <br/> Message: ' + message;
   console.log(body);
 
-  Email.send({
-    SecureToken : "f7516b7f-4d12-4347-b9e4-da2997b61c74",
-    To : 'dhounisubham@gmail.com',
-    From : "dhounisubham@gmail.com",
-    Subject : "Contact message",
-    Body : body
-  }).then(function(message){
+  templateParams={name, email, mob, sub, message, body}
+
+  emailjs.send("service_o76fstd", "template_ewxncsg", templateParams).then(function(message){
     statusMessage.textContent = "Thank you for your message! I will get back to you soon.";
     statusMessage.style.color = "green";
     document.getElementById("contactForm").reset();
