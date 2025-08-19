@@ -86,7 +86,6 @@ const round_start =(hidden_class, cont_class, className, percent, time, flag)=>{
                             clearInterval();
                             else
                             {
-                                console.log("haa");
                                 counter +=1;
                                 num[i].innerHTML = counter + "%";
                             }
@@ -101,8 +100,8 @@ const cpp_id = document.querySelectorAll(hidden_class);
 cpp_id.forEach((el) => observer.observe(el));
 }
 
-let percent = [80, 80, 70, 60, 75];
-let time =[24, 24, 27, 32, 26];
+let percent = [80, 80, 60, 80, 80];
+let time =[24, 24, 34, 24, 24];
 let flags =[false, false, false, false, false];
 let names = ['cpp_number', 'html_number', 'css_number', 'js_number', 'sql_number']
 let container = ['cpp_container', 'html_container', 'css_container', 'javascript_container', 'sql_container']

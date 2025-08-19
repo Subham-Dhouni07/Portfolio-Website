@@ -299,7 +299,7 @@ svg{
 
 @keyframes css_anim{
     100%{
-        stroke-dashoffset: 171.6;
+        stroke-dashoffset: 200.8;
     }
 }
 
@@ -323,7 +323,7 @@ svg{
 
 @keyframes js_anim{
     100%{
-        stroke-dashoffset: 208.8;
+        stroke-dashoffset: 94.4;
     }
 }
 
@@ -346,7 +346,7 @@ svg{
 
 @keyframes sql_anim{
     100%{
-        stroke-dashoffset: 150;
+        stroke-dashoffset: 94.4;
     }
 }
 

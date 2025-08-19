@@ -254,20 +254,20 @@ section{
 }
 
 .home .profession-box .profession:nth-child(1){
-    translate: 90px 0px;
+    translate: 35px 0px;
 }
 
 .home .profession-box .profession:nth-child(2){
-    translate: 0px 70px;
+    translate: 0px 50px;
 }
 
 
 .home .profession-box .profession:nth-child(3){
-    translate: -80px 0px;
+    translate: 0px 0px;
 }
 
 .home .profession-box .profession:nth-child(4){
-    translate: 0px -45px;
+    translate: 0px -15px;
 }
  
 .home .profession i {
