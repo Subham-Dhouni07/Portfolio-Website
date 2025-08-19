@@ -113,7 +113,7 @@ btn.addEventListener('click', function(e){
   console.log(body);
 
   Email.send({
-    SecureToken : "f7516b7f-4d12-4347-b9e4-da2997b61c74",
+    SecureToken : "1b4df7d4-7c80-4176-a07d-1f9a3799f17f",
     To : 'dhounisubham@gmail.com',
     From : "dhounisubham@gmail.com",
     Subject : "Contact message",
