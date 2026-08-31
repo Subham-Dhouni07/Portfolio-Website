@@ -16,12 +16,43 @@
     --main-color: #2f2fb2;
     --white-color: #fdfdfd;
     --shadow-color: rgba(0,0,0,.2);
+
+    /* The neumorphic dial is lit from the top left: dark shadow bottom-right,
+       light shadow top-left. Tokens rather than literals because the light
+       highlight has to become a dark one on the dark theme - a white glow over
+       #0b061f reads as a smear rather than a raised edge. */
+    --neu-dark:     rgba(0, 0, 0, .15);
+    --neu-light:    rgba(255, 255, 255, .7);
+    --neu-in-dark:  rgba(0, 0, 0, .2);
+    --neu-in-light: rgba(255, 255, 255, .7);
+
+    /* the unfilled part of a skill dial's arc. Themed for the same reason the
+       road below is: indigo at this opacity disappears entirely against
+       #0b061f, so the dark theme swaps it for a white hairline. */
+    --dial-track: rgba(47, 47, 178, .16);
+
+    /* education roadmap: the road itself, and the two node tints it
+       alternates between */
+    --road-line:  rgba(47, 47, 178, .25);
+    --rail-line:  rgba(47, 47, 178, .45);
+    --stop-peach: #f0c48b;
+    --stop-teal:  #7cc3c3;
 }
 
 .dark-mode{
     --bg-color: #0b061f;
     --text-color: #fdfdfd;
     --shadow-color: rgba(0,0,0,.7);
+
+    --neu-dark:     rgba(0, 0, 0, .6);
+    --neu-light:    rgba(255, 255, 255, .06);
+    --neu-in-dark:  rgba(0, 0, 0, .7);
+    --neu-in-light: rgba(255, 255, 255, .05);
+
+    --dial-track: rgba(255, 255, 255, .10);
+
+    --road-line: rgba(255, 255, 255, .18);
+    --rail-line: rgba(255, 255, 255, .38);
 }
 
 html{
@@ -32,11 +63,24 @@ html{
 body{
     background: var(--bg-color);
     color: var(--text-color);
+
+    /* the containing block the .floaters layer measures itself against */
+    position: relative;
+    overflow-x: hidden;
 }
 
 section{
     min-height: 100vh;
     padding: 10rem 0 2rem;
+}
+
+/* ...but not this one. A single row of rings is barely a third of a screen, so
+   the 100vh floor left the rest of the viewport empty underneath it - dead
+   space that read as an enormous gap before "My Journey". Sized to its content,
+   the break between the two sections is just the padding: 2rem here and the
+   10rem the next section pads at the top. */
+#skills{
+    min-height: auto;
 }
 
 
@@ -62,12 +106,13 @@ section{
 }
 
 .logo{
-    font-size: 2.5rem;
+    font-size: 30px;
     color: var(--main-color);
     font-weight: 600;
-    cursor: pointer;;
-    margin-right:auto;
-    font-size: 30px;
+    cursor: pointer;
+    margin-right: auto;
+    display: inline-flex;
+    transition: translate .35s cubic-bezier(.2,.7,.3,1), color .35s ease;
 }
 
 .navbar a{
@@ -130,23 +175,345 @@ h2{
 .heading {
     font-size: 5rem;
     font-weight: 700;
-    margin-top: 2em;
     text-align: center;
+
+    /* No margin-top. `section` already pads 10rem at the top to clear the fixed
+       header; the 2em that used to sit here stacked a further 10rem on top of
+       that and left the title floating in the middle of the screen. */
 }
 .timeline{
     margin-left: 3rem;
     margin-right: 3rem;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    /* not `center`: this section keeps the 100vh floor, and centring split the
+       leftover height above and below the road - so any slack landed on top of
+       "My Journey" and widened the gap the padding already sets. Slack goes at
+       the bottom instead, where the footer follows. */
+    justify-content: flex-start;
     align-items: center;
 }
 
-.timeline iframe {
-    border-radius: 50px;
-     width: 900px;
-    height: 700px; 
-    margin-bottom: 40px;
+/* ============================================================
+   EDUCATION ROADMAP
+
+   Replaces a Visme iframe with the same picture: a snaking road, stops sitting
+   on it alternately above and below, each with a stem down to the line.
+
+   The stops are NOT positioned by hand-written percentages. intro.js walks the
+   <path> with getPointAtLength and writes each stop's coordinates, so a stop
+   sits exactly on the curve however the path is later reshaped. The container
+   holds the viewBox's own 1000:420 ratio, which is what makes those SVG user
+   units convertible to percentages of the box.
+   ============================================================ */
+.road{
+    position: relative;
+    width: 100%;
+    max-width: 112rem;
+    margin: 0 auto 2rem;
+    padding: 0 2rem;
+}
+
+.road-title{
+    position: relative;
+    width: fit-content;
+    margin: 0 auto 1rem;
+    padding-bottom: 1rem;
+    font-size: 3.2rem;
+    font-weight: 400;
+    color: var(--text-color);
+    opacity: .75;
+    border-bottom: .2rem solid var(--rail-line);
+}
+
+.road-track{
+    position: relative;
+    width: 100%;
+
+    /* Matches the viewBox, so SVG coordinates map straight onto percentages.
+       Taller than the path's own extent, because the labels hanging below the
+       lowest troughs need room the road itself does not occupy. Sized to leave
+       roughly a dozen pixels under the deepest label and no more. */
+    aspect-ratio: 1000 / 440;
+}
+
+.road-svg{
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+/* The road draws itself in when the section arrives. The dash length is set
+   from the path's real measured length by intro.js - guessing it would leave
+   either a gap or an overshoot. */
+#roadPath{
+    stroke-dasharray: var(--road-len, 2000);
+    stroke-dashoffset: var(--road-len, 2000);
+    transition: stroke-dashoffset 2.4s cubic-bezier(.3,.6,.3,1);
+}
+
+.road.is-seen #roadPath{
+    stroke-dashoffset: 0;
+}
+
+.road-stops{
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* A stop is a zero-height anchor sitting exactly on the road, with its node,
+   stem and label hung off it. It used to be a flex column centred on the point
+   with `translate: -50% -50%`, which centred the whole column - so the node,
+   the one part that should touch the road, floated off it by half a label. */
+.stop{
+    position: absolute;
+
+    /* --x/--y are written by intro.js as percentages of the track */
+    left: var(--x, 50%);
+    top: var(--y, 50%);
+    translate: -50% 0;
+
+    /* Six of these across the track: at 15rem the edge gap was 12px, which is
+       not a gap. */
+    width: 14rem;
+    height: 0;
+
+    opacity: 0;
+    transition: opacity .6s ease var(--in, 0s);
+    z-index: 2;
+}
+
+.road.is-seen .stop{
+    opacity: 1;
+}
+
+/* Node, stem and label all measure from the anchor: 3.8rem is the node's own
+   radius, so the stem starts at its edge, and 7.2rem is where the stem ends
+   and the label begins. `is-up` hangs them above, `is-down` below - which is
+   what produces the zig-zag. */
+.stop-node,
+.stop-stem,
+.stop-label{
+    position: absolute;
+    left: 50%;
+}
+
+.stop.is-up .stop-stem{  bottom: 3.8rem; }
+.stop.is-down .stop-stem{ top:    3.8rem; }
+.stop.is-up .stop-label{ bottom: 6.6rem; }
+.stop.is-down .stop-label{ top:   6.6rem; }
+
+.stop-node{
+    top: 0;
+    translate: -50% -50%;   /* the node's centre lands on the road */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 7.6rem;
+    height: 7.6rem;
+    border-radius: 50%;
+    background: var(--tint);
+    color: #23234a;
+    flex-shrink: 0;
+    box-shadow: 0 .6rem 1.8rem rgba(0,0,0,.28);
+
+    scale: 0;
+    transition: scale .55s cubic-bezier(.34,1.56,.64,1) var(--in, 0s);
+}
+
+.road.is-seen .stop-node{
+    scale: 1;
+}
+
+.stop-node i{
+    font-size: 3.4rem;
+}
+
+/* The short line from the node out to its label, ending in a dot. */
+.stop-stem{
+    width: .3rem;
+    height: 2.8rem;
+    margin-left: -.15rem;
+    background: var(--rail-line);
+}
+
+.stop-stem::after{
+    content: '';
+    position: absolute;
+    left: 50%;
+    width: 1.1rem;
+    height: 1.1rem;
+    margin-left: -.55rem;
+    border-radius: 50%;
+    background: var(--rail-line);
+}
+
+.stop.is-up .stop-stem::after{ top: -.4rem; }
+.stop.is-down .stop-stem::after{ bottom: -.4rem; }
+
+.stop-label{
+    width: 14rem;
+    margin-left: -7rem;
+    text-align: center;
+}
+
+.stop-year{
+    display: block;
+    font-size: 1.9rem;
+    color: var(--stop-peach);
+    margin-bottom: .4rem;
+}
+
+.stop-label p{
+    font-family:'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 1.3rem;
+    line-height: 1.5;
+    color: var(--text-color);
+    opacity: .75;
+}
+
+/* --- every icon keeps moving -------------------------------------------- */
+
+/* The bulb pulses like it is thinking. */
+.bx-bulb{ animation: idleGlow 2.4s ease-in-out infinite; }
+
+/* The magnifier hunts side to side. */
+.bx-search-alt{ animation: idleHunt 2.8s ease-in-out infinite; }
+
+/* The cap tips, the way one does when it is thrown. */
+.bxs-graduation{ animation: idleTip 3s ease-in-out infinite; }
+
+/* The laptop breathes. */
+.bx-laptop{ animation: idleBreathe 2.6s ease-in-out infinite; }
+
+/* The briefcase swings, as one does being carried. */
+.bx-briefcase{ animation: idleSwing 2.6s ease-in-out infinite; }
+
+/* The chip ticks - a double beat, then a rest. */
+.bx-chip{ animation: idlePulse 2.2s ease-in-out infinite; }
+
+@keyframes idleGlow{
+    0%, 100%{ transform: scale(1)    rotate(0deg);  opacity: 1; }
+    50%     { transform: scale(1.38) rotate(-8deg); opacity: .5; }
+}
+
+@keyframes idleHunt{
+    0%, 100%{ transform: translate(0, 0) rotate(0deg); }
+    30%     { transform: translate(.9rem, -.7rem) rotate(26deg); }
+    65%     { transform: translate(-.8rem, .6rem) rotate(-22deg); }
+}
+
+@keyframes idleTip{
+    0%, 100%{ transform: rotate(0deg)   translateY(0); }
+    35%     { transform: rotate(-22deg) translateY(-.9rem); }
+    70%     { transform: rotate(15deg)  translateY(.4rem); }
+}
+
+@keyframes idleBreathe{
+    0%, 100%{ transform: scale(1)    translateY(0); }
+    50%     { transform: scale(1.26) translateY(-.7rem); }
+}
+
+@keyframes idleSwing{
+    0%, 100%{ transform: rotate(0deg)   translateY(0); }
+    30%     { transform: rotate(-26deg) translateY(-.4rem); }
+    65%     { transform: rotate(18deg)  translateY(.2rem); }
+}
+
+@keyframes idlePulse{
+    0%, 60%, 100%{ transform: scale(1)    rotate(0deg);  opacity: 1; }
+    16%          { transform: scale(1.42) rotate(6deg);  opacity: .55; }
+    32%          { transform: scale(1.14) rotate(-4deg); opacity: .85; }
+}
+
+/* --- the rockets --------------------------------------------------------- */
+.rocket{
+    position: absolute;
+    color: var(--rail-line);
+    opacity: .5;
+    pointer-events: none;
+
+    /* below the stops, so an overlap can never sit on top of a label */
+    z-index: 0;
+
+    /* the glyph points up-right already, so each is only nudged from there */
+    animation: rocketDrift 9s ease-in-out infinite;
+}
+
+.rocket i{ font-size: 4rem; }
+
+/* Parked in the bands the stops leave empty - the strip under the lowest
+   labels, and the corners beside the title - so a drifting rocket never
+   wanders across a milestone. */
+.rk1{ bottom:  2%; left:  3%; animation-duration: 7s;   animation-delay: -1s; }
+.rk2{ bottom:  6%; left: 16%; animation-duration: 9s;   animation-delay: -5s; }
+.rk3{ top:      0; right: 2%; animation-duration: 8s;   animation-delay: -3s; }
+
+@keyframes rocketDrift{
+    0%, 100%{ transform: translate(0, 0) rotate(0deg); }
+    35%     { transform: translate(4.5rem, -3.8rem) rotate(20deg); }
+    70%     { transform: translate(-3rem, 2.4rem) rotate(-16deg); }
+}
+
+/* Below this the road has no room to snake, so it becomes a plain vertical
+   list. The --x/--y intro.js wrote are ignored rather than unset, so nothing
+   has to be torn down when the viewport crosses the breakpoint. */
+@media (max-width: 900px){
+    .road-track{
+        aspect-ratio: auto;
+    }
+
+    .road-svg{
+        display: none;
+    }
+
+    .road-stops{
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3rem;
+        padding-top: 2rem;
+    }
+
+    .stop,
+    .stop.is-down{
+        position: static;
+        translate: none;
+        flex-direction: column;
+        width: 100%;
+        max-width: 34rem;
+    }
+
+    .stop-stem{
+        height: 2.5rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce){
+    .bx-bulb,
+    .bx-search-alt,
+    .bxs-graduation,
+    .bx-laptop,
+    .bx-briefcase,
+    .bx-chip,
+    .rocket{
+        animation: none;
+    }
+
+    #roadPath{
+        transition: none;
+        stroke-dashoffset: 0;
+    }
+
+    .stop,
+    .stop-node{
+        opacity: 1;
+        scale: 1;
+        transition: none;
+    }
 }
 
 .heading-content{
@@ -154,9 +521,18 @@ h2{
 }
 
 .heading-content p{
-    font-family:'Josefin Sans','Times New Roman', Times, serif;
-    font-size: 2rem;
+    font-family:'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 1.7rem;
+    line-height: 1.7;
+
+    /* Same pairing as `.about-content p` in style.css: justification is only
+       safe here because hyphenation is on to absorb the long words. */
     text-align: justify;
+    -webkit-hyphens: auto;
+    hyphens: auto;
+    -webkit-hyphenate-limit-before: 3;
+    -webkit-hyphenate-limit-after: 3;
+    hyphenate-limit-chars: 7 3 3;
     border-top: 3px solid var(--main-color);
     border-bottom: 3px solid var(--main-color);
     border-radius: 4rem;
@@ -167,6 +543,12 @@ h2{
 
     margin-left: 3rem;
     margin-right: 3rem;
+
+    /* A surface of its own, so the bio separates from the drifting shapes
+       passing behind it rather than floating loose on the page. */
+    background: var(--bg-color);
+    box-shadow: 0 .4rem 2rem var(--shadow-color);
+    transition: box-shadow .4s ease, translate .4s cubic-bezier(.2,.7,.3,1);
 }
 
 .info_container{
@@ -174,23 +556,44 @@ h2{
     flex-direction: column;
 }
 
+/* No top margin: every section already pads 10rem at the top, and the 1em
+   (45px) that used to sit here stacked onto that and left the title adrift from
+   the content it names. Each section sets its own space below instead. */
 .subheading{
-    font-size: 3rem;
-    text-align: center;
-    margin: 1em 1em 0 1em;
     font-size: 45px;
+    text-align: center;
+    margin: 0 1em;
 }
 
 #skills .subheading{
     margin-bottom: 50px;
 }
 
+/* enough that "My Journey" reads as its own line rather than running into the
+   road's own "Education & Experience" title just below it */
+#timeline .subheading{
+    margin-bottom: 30px;
+}
+
+/* ============================================================
+   SKILL DIALS
+
+   A neumorphic disc with a gradient arc running round its groove, one per
+   skill. The percentage lives in exactly one place - data-pct on .skill-card -
+   and Js/intro.js copies it to --pct and counts it into .skill-number, so a
+   dial can be added or removed in the markup alone.
+
+   Circumference is 2*pi*70 = 439.82, for the r="70" in the markup. The old
+   value of 472 describes a circle of r=75.1, which is why "80%" was drawing
+   an arc closer to 86.
+   ============================================================ */
 .skill{
     width: 160px;
     height: 160px;
     position: relative;
-    margin-left: 3rem;
-    margin-right: 3rem;
+
+    /* Spacing belongs to the container's `gap`, not to per-item margins - the
+       two were stacking and pushing the last dial onto a row of its own. */
 }
 
 .outer{
@@ -198,8 +601,8 @@ h2{
     height: 160px;
     border-radius: 50%;
     padding: 20px;
-    box-shadow: 6px 6px 10px -1px rgba(0, 0, 0, 0.15),
-                -6px -6px 10px -1px rgba(255, 255, 255, 0.7);
+    box-shadow: 6px 6px 10px -1px var(--neu-dark),
+                -6px -6px 10px -1px var(--neu-light);
 }
 
 .inner{
@@ -209,152 +612,256 @@ h2{
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: inset 4px 4px 6px -1px rgba(0, 0, 0, 0.2),
-                inset -4px -4px 6px -1px rgba(255, 255, 255, 0.7),
-                -0.5px -0.5px 0px rgba(255, 255, 255, 1),
-                0.5px 0.5px 0px rgba(0, 0, 0, 0.5),
+    box-shadow: inset 4px 4px 6px -1px var(--neu-in-dark),
+                inset -4px -4px 6px -1px var(--neu-in-light),
                 0px 12px 10px -10px rgba(0, 0, 0, 0.05);
 }
 
-.cpp_container .cpp_number, .html_container .html_number, .sql_container .sql_number, .css_container .css_number, .javascript_container .js_number{
-    font-weight: 600px;
-    color: #555;
-}
+.skill-card{
+    --pct: 0;
+    --circumference: 439.82;
 
-.skills_name{
-    text-align: center;
-    margin-bottom: 25px;
-}
-
-/* for cpp round bar */
-.cpp_container, .html_container, .sql_container, .css_container, .javascript_container{
     padding: 25px;
     font-size: 20px;
     display: flex;
     flex-direction: column;
+    align-items: center;
+    transition: scale .35s cubic-bezier(.2,.7,.3,1);
 }
 
-.cpp_container circle{
-    fill: none;
-    stroke: url(#GradientColor);
-    stroke-width: 20px;
-    stroke-dasharray: 472;
-    stroke-dashoffset: 472;
-    animation: cpp_anim 2s linear forwards;
+.skills_name{
+    text-align: center;
+    margin-bottom: 22px;
+    font-size: 1.9rem;
+    letter-spacing: .01em;
 }
 
-svg{
+.skill-number{
+    font-family:'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 2.8rem;
+    font-weight: 600;
+    letter-spacing: -.02em;
+    color: var(--text-color);
+
+    /* the figure counts from 0 to its target, and proportional digits make it
+       jitter on every tick - tabular ones hold the width still */
+    font-variant-numeric: tabular-nums;
+}
+
+/* The ring is an overlay on the dial, not a sibling stacked beneath it. The
+   old file said this with a bare `svg { position: absolute }`, repeated once
+   per skill; scoped here so it cannot catch a <defs> block elsewhere in the
+   document too. */
+.skill svg{
     position: absolute;
     top: 0;
     left: 0;
+
+    /* The ring swings the last 20deg into place while it fills, so the sweep
+       arrives rather than simply appearing. Rotating the <svg> box is safe -
+       the track under it is a full circle, so its own rotation is invisible -
+       and it composes with the circles' -90deg without disturbing it. */
+    transform: rotate(-20deg);
+    transition: transform 1.8s cubic-bezier(.2,.7,.3,1);
 }
 
-@keyframes cpp_anim{
-    100%{
-        /* FORMULA : 472-472*80 */
-        width:max-content;
-        stroke-dashoffset: 94.4;
-    }
+.skill-card.is-filled svg{
+    transform: rotate(0deg);
 }
 
-/* for HTML round bar */
-
-.html_container circle{
+.skill circle{
     fill: none;
-    stroke: url(#GradientColor);
-    stroke-width: 20px;
-    stroke-dasharray: 472;
-    stroke-dashoffset: 472;
-    animation: html_anim 2s linear forwards;
+
+    /* Start the arc at twelve o'clock rather than three, so it reads as a
+       gauge filling clockwise from the top. */
+    transform: rotate(-90deg);
+    transform-origin: 80px 80px;
 }
 
-svg{
+/* 15px inside a 20px groove, so the arc floats in the channel rather than
+   filling it wall to wall - and the track shows as a hairline either side. */
+.ring-track{
+    stroke: var(--dial-track);
+    stroke-width: 15px;
+}
+
+.ring-fill{
+    stroke: url(#ringGradient);
+    stroke-width: 15px;
+
+    /* `* 1px` throughout: --circumference is stored unitless so it can be used
+       in the arithmetic below, but a calc() resolving to a bare number is not
+       reliably accepted for these properties. */
+    stroke-dasharray: calc(var(--circumference) * 1px);
+    stroke-dashoffset: calc(var(--circumference) * 1px);
+
+    /* cast from the arc alone, so the glow traces the drawn length and grows
+       with it rather than haloing the whole disc from the start */
+    filter: drop-shadow(0 .3rem 1rem rgba(123, 92, 240, .45));
+
+    /* A transition, not an animation: the arc holds at zero until intro.js
+       adds .is-filled, so it can never play out of sight before the section
+       has been scrolled to. */
+    transition: stroke-dashoffset 1.8s cubic-bezier(.2,.7,.3,1),
+                filter .35s ease;
+}
+
+.skill-card.is-filled .ring-fill{
+    stroke-dashoffset: calc(var(--circumference) * 1px * (100 - var(--pct)) / 100);
+}
+
+/* --- the arc's leading edge ---
+   A bright pip riding the head of the fill, so the sweep has a front and not
+   just a growing tail. r="70" in a 160 box puts the stroke's centre line
+   exactly 10px in from the edge, which is where the dot sits.
+
+   It carries the same -20deg start and the same 1.8s easing as the <svg>
+   above, and that is what keeps it locked to the tip for the whole sweep
+   rather than only at the ends: on screen the tip sits at the svg's rotation
+   plus the arc's own, and with both running the same eased progress e, that
+   sum is -20(1-e) + 3.6·pct·e - precisely what this element's single rotation
+   resolves to at every point in between. Change one duration or easing and
+   the dot drifts off the arc mid-flight. */
+.dial-head{
     position: absolute;
-    top: 0;
-    left: 0;
+    inset: 0;
+    pointer-events: none;
+    transform: rotate(-20deg);
+    transition: transform 1.8s cubic-bezier(.2,.7,.3,1);
 }
 
-@keyframes html_anim{
-    100%{
-        stroke-dashoffset: 94.4;
-    }
+.skill-card.is-filled .dial-head{
+    transform: rotate(calc(var(--pct) * 3.6deg));
 }
 
-/* for CSS round bar */
-
-.css_container circle{
-    fill: none;
-    stroke: url(#GradientColor);
-    stroke-width: 20px;
-    stroke-dasharray: 472;
-    stroke-dashoffset: 472;
-    animation: css_anim 2s linear forwards;
-}
-
-svg{
+.dial-head::before{
+    content: '';
     position: absolute;
-    top: 0;
-    left: 0;
+    top: 10px;
+    left: 50%;
+    width: 7px;
+    height: 7px;
+    margin-left: -3.5px;
+    border-radius: 50%;
+    background: #fff;
+    transition: scale .35s cubic-bezier(.2,.7,.3,1);
+    animation: dialHeadPulse 2.4s ease-in-out infinite;
 }
 
-@keyframes css_anim{
-    100%{
-        stroke-dashoffset: 200.8;
-    }
+/* Breathing lives on the pip rather than on .ring-fill: an animation on the
+   arc's own filter would outrank the hover rule below and kill it. */
+@keyframes dialHeadPulse{
+    0%, 100%{ box-shadow: 0 0 0 1px rgba(123, 92, 240, .45), 0 0 .8rem .2rem rgba(123, 92, 240, .55); }
+    50%     { box-shadow: 0 0 0 1px rgba(123, 92, 240, .70), 0 0 1.4rem .5rem rgba(123, 92, 240, .90); }
 }
 
-
-/* for Js round bar */
-
-.javascript_container circle{
-    fill: none;
-    stroke: url(#GradientColor);
-    stroke-width: 20px;
-    stroke-dasharray: 472;
-    stroke-dashoffset: 472;
-    animation: js_anim 2s linear forwards;
+/* Lift the whole dial toward the reader on hover, and let the arc's glow and
+   its leading pip come up with it. */
+.skill-card:hover{
+    scale: 1.06;
 }
 
-svg{
-    position: absolute;
-    top: 0;
-    left: 0;
+.skill-card:hover .ring-fill{
+    filter: drop-shadow(0 .4rem 1.6rem rgba(123, 92, 240, .7));
 }
 
-@keyframes js_anim{
-    100%{
-        stroke-dashoffset: 94.4;
-    }
-}
-
-/* for sql round bar */
-
-.sql_container circle{
-    fill: none;
-    stroke: url(#GradientColor);
-    stroke-width: 20px;
-    stroke-dasharray: 472;
-    stroke-dashoffset: 472;
-    animation: sql_anim 2s linear forwards;
-}
-
-svg{
-    position: absolute;
-    top: 0;
-    left: 0;
-}
-
-@keyframes sql_anim{
-    100%{
-        stroke-dashoffset: 94.4;
-    }
+.skill-card:hover .dial-head::before{
+    scale: 1.35;
+    animation-duration: 1.2s;
 }
 
 .skill_container{
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    /* flex-direction: row-reverse; */
+    align-items: flex-start;
+    gap: 2rem 3rem;
+}
+
+/* ============================================================
+   DRIFTING BACKGROUND SHAPES
+
+   Same treatment as the main page. One layer for the whole document here
+   rather than per section, since nothing on this page depends on having no
+   positioned ancestor the way the hero's gradient does on index.html.
+   ============================================================ */
+.floaters{
+    position: absolute;
+    inset: 0;
+    overflow: visible;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.floaters span{
+    position: absolute;
+    display: block;
+    border: .2rem solid var(--main-color);
+    opacity: .16;
+    animation: floatCross 30s ease-in-out infinite alternate,
+               floatSway 11s ease-in-out infinite;
+}
+
+.dark-mode .floaters span{
+    opacity: .3;
+}
+
+@keyframes floatCross{
+    from{ transform: translateY(0)     rotate(0deg); }
+    to  { transform: translateY(-45vh) rotate(140deg); }
+}
+
+@keyframes floatSway{
+    0%, 100%{ translate: 0 0; }
+    50%     { translate: 4vw 0; }
+}
+
+.floaters .f1{ top:  8%; left:  6%; width: 6rem;   height: 6rem;   border-radius: 50%; animation-duration: 34s, 13s; animation-delay:  -3s,  0s; }
+.floaters .f2{ top: 26%; left: 88%; width: 2.6rem; height: 2.6rem; rotate: 15deg;      animation-duration: 27s, 10s; animation-delay: -14s, -3s; }
+.floaters .f3{ top: 44%; left: 12%; width: 1.4rem; height: 1.4rem; border-radius: 50%; animation-duration: 23s,  9s; animation-delay:  -8s, -5s; border: none; background: var(--main-color); }
+.floaters .f4{ top: 61%; left: 82%; width: 4.6rem; height: 4.6rem; border-radius: 50%; animation-duration: 38s, 15s; animation-delay: -21s, -2s; }
+.floaters .f5{ top: 78%; left:  9%; width: 1rem;   height: 1rem;   border-radius: 50%; animation-duration: 25s, 11s; animation-delay: -17s, -7s; border: none; background: var(--main-color); }
+.floaters .f6{ top: 91%; left: 91%; width: 2rem;   height: 2rem;   rotate: 20deg;      animation-duration: 31s, 14s; animation-delay:  -6s, -4s; }
+
+/* ============================================================
+   PAGE FURNITURE
+
+   The bio panel and the back arrow, which were both entirely static.
+   ============================================================ */
+
+.heading-content p:hover{
+    box-shadow: 0 1rem 3rem var(--shadow-color);
+    translate: 0 -.4rem;
+}
+
+/* The only way back to the main page, and it had no hover state at all. */
+.logo:hover{
+    translate: -.6rem 0;
+}
+
+@media (prefers-reduced-motion: reduce){
+    .floaters{
+        display: none;
+    }
+
+    .ring-fill,
+    .skill svg,
+    .dial-head{
+        transition: none;
+    }
+
+    .dial-head::before{
+        animation: none;
+    }
+
+    .skill-card:hover,
+    .heading-content p:hover,
+    .logo:hover,
+    .footer-iconTop a:hover{
+        scale: 1;
+        translate: none;
+        transform: none;
+    }
 }
 
 .footer{
@@ -380,11 +887,13 @@ svg{
     border-radius: .8rem;
     border: .2rem solid var(--main-color);
     outline: .2rem solid transparent;
-    transition: .5s ease;
+    transition: outline-color .5s ease,
+                translate .35s cubic-bezier(.2,.7,.3,1);
 }
 
 .footer-iconTop a:hover{
     outline-color: var(--white-color);
+    translate: 0 -.4rem;
 }
 
 .footer-iconTop i{
@@ -407,18 +916,18 @@ svg{
     section{
         padding: 10rem 3% 2rem;
     }
-
-    .timeline iframe {
-        border-radius: 50px;
-         width: 100%;
-        height: 622px; 
-        margin-bottom: 40px;
-    }
     
 
  }
 
  @media (max-width: 768px){
+    /* Same reasoning as .about-content p in style.css: justification needs a
+       measure to spread the slack across, and forty-odd characters is not
+       enough - it opens rivers instead. */
+    .heading-content p{
+        text-align: left;
+    }
+
     #menu-icon {
         display: block;
     }
@@ -429,13 +938,6 @@ svg{
         font-size: 2.6rem;
         color: var(--text-color);
         margin-bottom: .1rem;
-    }
-
-    .timeline iframe {
-        border-radius: 50px;
-         width: 100%;
-        height: 622px; 
-        margin-bottom: 40px;
     }
 
     .navbar {
