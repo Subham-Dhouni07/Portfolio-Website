@@ -420,25 +420,20 @@ section{
     animation: professionCounter 15s ease-out infinite;
 }
 
-/* Used only by the phone layout - see the media query at the foot of this
-   file. A role is up for its own quarter of the wheel's turn and down for the
-   other three, so no second label can be caught halfway into view.
+/* The countdown, re-cut for the phone layout - see the media query at the foot
+   of this file.
 
-   The 20% matters: professionRotate holds a role still for the first 20% of
-   each quarter and spends the rest turning. Fading out any later than that
-   leaves a label three-quarters visible while it is already sliding off the
-   top of the wheel - which is a label adrift over the hero, and exactly what
-   the earlier 24% produced. Gone by 20%.
-
-   Coming back is a cut, not a fade, for the same reason in reverse: a fade
-   spread over the last few percent had the label already at three-quarters
-   opacity while it was still sliding into place, sitting visibly off-centre.
-   It appears at the instant it lands - which is also what the wide layout
-   does, where the label is wiped into view by the edge of the wedge. */
-@keyframes roleAtFront{
-    0%, 18%     { opacity: 1; }
-    20%, 99.9%  { opacity: 0; }
-    100%        { opacity: 1; }
+   The 338.4 above is 70deg of the circle, sized to the sliver of ring that
+   clears the wedge on the wide layout. Over the phone's arc that is a short
+   stroke floating in the middle of a much longer curve, which is why the fill
+   looked like it began nowhere in particular. 580 is 120deg - the span that
+   actually clears the indigo - so the highlight runs the whole visible arc,
+   corner to corner. */
+@keyframes phaseSweepTop{
+    0%   { stroke-dasharray: 0 1740.4;   opacity: 1; }
+    80%  { stroke-dasharray: 435 1740.4; opacity: 1; }
+    93%  { stroke-dasharray: 435 1740.4; opacity: 0; }
+    100% { stroke-dasharray: 0 1740.4;   opacity: 0; }
 }
 
 @keyframes professionCounter{
@@ -2109,7 +2104,48 @@ span{
         background: var(--main-color);
         transform: none;
         clip-path: polygon(0 0, 50% 90px, 100% 0, 100% 100%, 0 100%);
-    }    /* Nudges that keep the wheel's longest labels clear of the wedge on the
+    }
+
+    /* --- the countdown arc, re-aimed ---
+       The ring keeps its counter-rotation here, exactly as on the wide layout,
+       and stays solid. Letting it turn instead - dashed, so the turning showed
+       - cost more than it bought: the arc is a fixed 70deg window on the ring,
+       so once the ring turned, the arc travelled with it and lined up under a
+       role only once per full cycle. Three roles out of four came up with no
+       highlight at all.
+
+       Static ring, moving arc. All this changes is where the window points:
+       the wide layout aims it at 180deg, out through the wedge's notch on the
+       left; the role here sits at the top of the wheel, so it wants 270deg.
+       The extra rotation is prepended, which puts it outside the scaleY flip
+       and so measures in screen degrees rather than the flipped frame. */
+    /* Written out rather than nudged from the wide layout's value, which is a
+       `scaleY(-1) rotate(145deg)` pair - the flip is there to reverse which
+       way the dash reads on screen, and reasoning about a start angle through
+       it is how the fill ended up beginning at the top instead of at an end.
+
+       Measured, not reasoned - the reasoning was wrong twice before the path
+       was actually walked. Asking the circle where it is at a given length,
+       and mapping that through its screen matrix, gives the truth: the dash
+       grows CLOCKWISE, and the circle sits at (195, 305) with r=235 in the
+       container. So a start at 315deg - the notch's right hand corner - sent
+       the fill straight down the right side and under the band, which is why
+       no highlight appeared at all.
+
+       225deg is the other corner. From there clockwise carries the fill up
+       over the top and finishes at 315deg, the right corner: left to right
+       across the whole visible arc.
+
+       Both ends overshoot into the indigo by about 7deg, since the arc that
+       truly clears the notch measures ~76deg and the 435 of dash above is 90.
+       That is deliberate - the taper at each end is hidden under the band, so
+       the highlight reads at full strength everywhere you can see it. */
+    .home .profession-box .circle .phase{
+        transform: rotate(225deg);
+        animation-name: phaseSweepTop;
+    }
+
+    /* Nudges that keep the wheel's longest labels clear of the wedge on the
        wide layout. With the wedge gone they only push labels off their orbit. */
     .home .profession-box .profession:nth-child(1),
     .home .profession-box .profession:nth-child(2),
@@ -2117,6 +2153,24 @@ span{
     .home .profession-box .profession:nth-child(4){
         translate: none;
         rotate: none;
+    }
+
+    /* --- one radius for all four ---
+       A label is laid at `left: 0` and spun about a point 384px in, so the
+       radius it travels on is `384 - its own width / 2`. Shrink-to-fit widths
+       therefore put every role on a different orbit: "AI Engineer" is the
+       narrowest, rides the widest radius, and came up some 25px higher than
+       "GenAI Developer" - high enough to float clear above the arc while the
+       others sat properly in it.
+
+       A fixed width settles it: same width, same radius, same height at the
+       top for all four. px rather than rem because `html` changes font-size at
+       two breakpoints below this one, and a radius has no business moving with
+       the type scale. 200px puts them 241px out against the arc's 235, so each
+       label sits just across the line - which is where the opaque backing on
+       the icon and the text hides the stroke behind it. */
+    .home .profession-box .profession{
+        width: 200px;
     }
 
     /* --- keeping the labels the right way up ---
@@ -2140,33 +2194,22 @@ span{
         animation: professionCounter 15s ease-out infinite;
     }
 
-    /* --- one role on screen, ever ---
-       The wide layout gets this for free: the wedge's notch is a narrow
-       triangle and everything outside it is under indigo. Here the opening is
-       the width of the screen, so while the wheel turns between roles a second
-       label swings into view beside the first, both cut off at the edges.
+    /* --- the wipe does the work ---
+       No opacity animation on the labels. There was one, and it is what made
+       the roles read as blinking: the word faded out where it stood, a gap,
+       then the next faded in where IT stood. Nothing travelled.
 
-       Rather than chase that with a narrower mask - which only trades two
-       clipped labels for one - each label is simply shown for its own quarter
-       of the turn and hidden for the rest. professionRotate holds a role at
-       the front for the first 80% of each quarter and spends the last 20%
-       turning, and these keyframes follow it: up before the hold, down before
-       the wheel moves on.
+       On the wide layout nothing fades either - a label is wiped into view by
+       the edge of the wedge as the wheel carries it into the notch, and wiped
+       away again on the other side. The V notched into the band here is the
+       same edge, so the same thing happens for free: a role climbs out from
+       behind the indigo, sits at the top while the wheel holds, and sinks back
+       under it as the wheel turns on.
 
-       The delay staggers them, and it is offset by a quarter for a reason
-       worth writing down: at rest the label at the TOP of the wheel - the one
-       this layout shows - is `--i:1`, not 0. Role 0 carries no rotation of its
-       own, so it sits at the box's left edge, which after the scale is off the
-       left of the screen entirely. The order at the top is 1, 2, 3, 0.
-
-       Every delay is negative so that each role begins mid-animation; a
-       positive one would leave that label sitting at its un-animated opacity
-       until its turn came round, which is a second label on screen. */
-    .home .profession-box .profession{
-        animation: roleAtFront 15s ease-out infinite;
-        animation-delay: calc(var(--i) * 3.75s - 18.75s);
-    }
-    .about{
+       That it is one role at a time is geometry, not a rule. They are 90deg
+       apart on the wheel, and the notch only clears the few dozen degrees
+       either side of the top, so a second label cannot be out at once - it is
+       either still under the indigo or already off the side of the screen. */    .about{
         flex-direction: column-reverse;
         text-align: center;
     }

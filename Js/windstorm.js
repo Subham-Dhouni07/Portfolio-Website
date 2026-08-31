@@ -16,8 +16,9 @@
    letting go that ends the storm - but the two numbers are independent: SPIN_MS
    and STORM_MS below.
 
-   The wind blows right to left, out of the wheel, because that is where the
-   wheel is. Everything flies away from it.
+   The wind blows out of the wheel, so its direction follows where the wheel
+   is: right to left on a wide screen, where the wheel sits off to the side,
+   and straight up on a phone, where it sits at the foot of the hero.
 
    Three things make this safe to run over a page that is already animating:
 
@@ -57,6 +58,12 @@
   const SHAKES    = 26;                // jitter samples across the build-up
 
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  /* Where the wheel is, which is what sets the wind's direction - see the gust
+     vector below. Read at click time rather than cached, so rotating the phone
+     or resizing the window is picked up. */
+  const narrow = window.matchMedia('(max-width: 768px)');
+
   const logo   = document.querySelector('.header .logo');
   const wheel  = document.querySelector('.home .profession-box');
   if(!logo || !wheel) return;
@@ -137,9 +144,16 @@
       });
     }
 
-    // 4s: torn off and carried away, left and mostly upward
-    const dx  = -(260 + Math.random() * 780);
-    const dy  = -(Math.random() * 300) + 70;
+    /* 4s: torn off and carried away, out of the wheel.
+
+       Which way that is depends on where the wheel is, and it moves. On a wide
+       screen it sits off to the right, so the wind comes in from the right and
+       everything is swept to the left. On a phone the wheel is at the foot of
+       the hero instead - so the gust comes UP out of it, and sweeping sideways
+       there just looked like the page had slid off its rails. */
+    const up  = narrow.matches;
+    const dx  = up ? rand(170) : -(260 + Math.random() * 780);
+    const dy  = up ? -(300 + Math.random() * 620) : -(Math.random() * 300) + 70;
     const rot = rand(700);
 
     frames.push({
