@@ -53,64 +53,136 @@ ScrollReveal({
     delay: 200
 });
 
-ScrollReveal().reveal('.heading-content h2, #css_container, .skills h3, .timeline h3', { origin: 'top' });
-ScrollReveal().reveal('.heading-content p,  #html_container,  #javascript_container, iframe', { origin: 'bottom' });
-ScrollReveal().reveal('#cpp_container', { origin: 'left' });
-ScrollReveal().reveal('#sql_container, .home-content p, .about-content', { origin: 'right' });
+// `.heading` and not `.heading-content h2`: the <h2> is a sibling of
+// .heading-content, not a child, so the old selector matched nothing and the
+// page's main title never animated at all.
+ScrollReveal().reveal('.heading, .subheading', { origin: 'top' });
+// The roadmap is not handed to ScrollReveal: it runs its own reveal, keyed to
+// the road drawing itself, and two things writing transform on the same stops
+// would fight.
+ScrollReveal().reveal('.heading-content p', { origin: 'bottom' });
+
+// The dials arrive one after another rather than as a block. The ids they used
+// to be selected by are gone; they are .skill-card now, and interval picks up
+// the stagger for free.
+ScrollReveal().reveal('.skill-card', { origin: 'bottom', interval: 120 });
 
 
 
-// skill round animation when visible.
+/* --- education roadmap -----------------------------------------------------
 
-const round_start =(hidden_class, cont_class, className, percent, time, flag)=>{
+   Two jobs, both about not hardcoding numbers that the SVG already knows:
 
-    const observer = new IntersectionObserver((entries) =>{
-        entries.forEach((entry) =>{
-            
-            console.log(entry)
-            if(entry.isIntersecting)
-            {
-                entry.target.classList.add(cont_class);
-                
-                let num =  document.getElementsByClassName(className);
-                
-                if(flag == false)
-                {   
-                    flag = true;
-                    
-                    for(let i=0; i<num.length; i++)
-                    {
-                        let counter = 0;
-                        setInterval(()=>{
-                            if(counter == percent)
-                            clearInterval();
-                            else
-                            {
-                                counter +=1;
-                                num[i].innerHTML = counter + "%";
-                            }
-                        },time);
-                    }
-                }
-            }
-        })
-    })
+     1. Each stop is placed by asking the <path> where it is at a given
+        fraction of its length. Hand-tuned percentages would be wrong the
+        moment the curve is reshaped, and wrong in a way that is hard to spot.
 
-const cpp_id = document.querySelectorAll(hidden_class);
-cpp_id.forEach((el) => observer.observe(el));
-}
+     2. The draw-on animation needs the path's real length for its dash. The
+        usual fudge is to guess a number larger than the path; measuring gives
+        an exact start and end instead.
+--------------------------------------------------------------------------- */
+(function roadmap(){
+  const road  = document.querySelector('.road');
+  const path  = document.getElementById('roadPath');
+  const stops = road?.querySelectorAll('.stop');
+  if(!road || !path || !stops?.length) return;
 
-let percent = [80, 80, 60, 80, 80];
-let time =[24, 24, 34, 24, 24];
-let flags =[false, false, false, false, false];
-let names = ['cpp_number', 'html_number', 'css_number', 'js_number', 'sql_number']
-let container = ['cpp_container', 'html_container', 'css_container', 'javascript_container', 'sql_container']
-let hidden = ['.cpp_hidden', '.html_hidden', '.css_hidden', '.js_hidden', '.sql_hidden']
+  // Where along the road each stop sits, 0 = start, 1 = end. One per half-wave,
+  // landing on the crest or trough at the middle of each of the six segments.
+  const AT = [0.083, 0.25, 0.417, 0.583, 0.75, 0.917];
 
-for(let i=0; i<time.length; i++)
-{
-    round_start(hidden[i], container[i], names[i], percent[i], time[i], flags[i]); 
-}
+  // the viewBox this path was drawn in; the container holds the same ratio,
+  // so user units convert straight to percentages of the box
+  const VB_W = 1000, VB_H = 440;
+
+  function place(){
+    const len = path.getTotalLength();
+    road.style.setProperty('--road-len', len.toFixed(1));
+
+    stops.forEach((stop, i) => {
+      const p = path.getPointAtLength(len * (AT[i] !== undefined ? AT[i] : (i + 1) / (stops.length + 1)));
+      stop.style.setProperty('--x', (p.x / VB_W * 100).toFixed(2) + '%');
+      stop.style.setProperty('--y', (p.y / VB_H * 100).toFixed(2) + '%');
+      // stagger, so the stops land one after another as the road draws past
+      stop.style.setProperty('--in', (0.35 + i * 0.28).toFixed(2) + 's');
+    });
+  }
+
+  place();
+  window.addEventListener('resize', place, { passive: true });
+
+  if(!window.IntersectionObserver){
+    road.classList.add('is-seen');
+    return;
+  }
+
+  new IntersectionObserver((entries, obs) => {
+    entries.forEach(entry => {
+      if(!entry.isIntersecting) return;
+      road.classList.add('is-seen');
+      obs.disconnect();          // plays once
+    });
+  }, { threshold: .25 }).observe(road);
+})();
+
+/* --- skill dials -----------------------------------------------------------
+
+   Each card carries its own target as data-pct, and that single number drives
+   both the arc and the counted figure. The previous version kept them apart -
+   an array in here for the number, a hardcoded stroke-dashoffset in the
+   stylesheet for the arc - and the two had already drifted out of agreement.
+
+   The old counter also ran on setInterval and tried to stop with a bare
+   `clearInterval()`, which takes an id and silently does nothing without one.
+   Five intervals therefore kept firing every ~25ms for as long as the page was
+   open, long after the numbers had settled. This counts on rAF instead, which
+   stops on its own and pauses when the tab is in the background.
+--------------------------------------------------------------------------- */
+(function skillDials(){
+  const COUNT_MS = 1800;   // matched to the ring transition in intro.css
+  const cards = document.querySelectorAll('.skill-card');
+  if(!cards.length) return;
+
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function fill(card){
+    const pct = Number(card.dataset.pct) || 0;
+    const out = card.querySelector('.skill-number');
+
+    card.style.setProperty('--pct', pct);
+    card.classList.add('is-filled');   // releases the CSS transition on the arc
+
+    if(reduce){
+      if(out) out.textContent = pct + '%';
+      return;
+    }
+
+    const start = performance.now();
+    (function step(now){
+      const t = Math.min((now - start) / COUNT_MS, 1);
+      // ease-out, so the number decelerates onto its final value in step with
+      // the arc rather than ticking up at a constant rate and arriving early
+      const eased = 1 - Math.pow(1 - t, 3);
+      if(out) out.textContent = Math.round(pct * eased) + '%';
+      if(t < 1) requestAnimationFrame(step);
+    })(start);
+  }
+
+  if(!window.IntersectionObserver){
+    cards.forEach(fill);
+    return;
+  }
+
+  const io = new IntersectionObserver((entries, obs) => {
+    entries.forEach(entry => {
+      if(!entry.isIntersecting) return;
+      fill(entry.target);
+      obs.unobserve(entry.target);   // once each; nothing left watching after
+    });
+  }, { threshold: .35 });
+
+  cards.forEach(card => io.observe(card));
+})();
 
 
 

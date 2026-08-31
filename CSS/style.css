@@ -60,6 +60,7 @@ body{
     margin-right:auto;
 }
 
+
 .navbar a{
     position:relative;
     font-size: 1.7rem;
@@ -116,10 +117,69 @@ section{
 .home{
     display: flex;
     align-items: center;
+
+    /* --- one description of the indigo wedge, for everything that has to line
+       up with it: .profession-container's box, the .overlay triangle inside it,
+       and the .home::before strips that carry the indigo above and below. They
+       used to be three copies of the same numbers restated in every breakpoint;
+       now a breakpoint moves the wedge by editing these and the rest follows.
+
+         --wedge-w/h  the column of indigo: .profession-container's own box
+         --wedge-notch  .overlay's transparent left border - the bite out of
+                        the column's left edge, measured from the column's top
+         --wedge-x    how far right of the viewport the wedge is nudged
+                      (the media queries' old `right: -9rem` is 9rem here) --- */
+    --wedge-w: 768px;
+    --wedge-h: 768px;
+    --wedge-notch: 384px;
+    --wedge-x: 0px;
+}
+
+/* --- indigo above and below the wedge ---
+   The indigo only exists inside .profession-container, which is 768px tall and
+   vertically centred on the viewport. On any window taller than that, the
+   strips above and below it are plain --bg-color.
+
+   That is a real problem rather than a cosmetic one: .header is transparent
+   with --white-color links until it goes sticky at 100px of scroll, so it
+   relies on sitting over the wedge. At a 900px viewport the wedge starts at
+   y=66 and the header does not - the nav is #fdfdfd on #fdfdfd, invisible,
+   until you scroll. At 1080px the gap is 156px.
+
+   This carries the indigo up and down to close those strips. The transparent
+   middle of the gradient is exactly the band .profession-container already
+   paints, so the two meet without overlapping. Positioned like .floaters: no
+   positioned ancestor, so it resolves against the initial containing block -
+   the same box .profession-container measures its own 50% against. */
+.home::before{
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: calc(-1 * var(--wedge-x));
+    width: var(--wedge-w);
+    z-index: 0;
+    pointer-events: none;
+    /* The 1px is an overlap, not a nudge. Butt-joined exactly on the wedge's
+       edge, a viewport height that leaves the boundary on a half-pixel - 800px
+       against a 755px wedge, say - gave each side half a pixel and drew a white
+       hairline right across the indigo. The wedge's notch has no width at all
+       on those two rows, so a row of overlap is covered by indigo either way. */
+    background: linear-gradient(
+        to bottom,
+        var(--main-color) calc(50% - var(--wedge-h) / 2 + 1px),
+        transparent       calc(50% - var(--wedge-h) / 2 + 1px),
+        transparent       calc(50% + var(--wedge-h) / 2 - 1px),
+        var(--main-color) calc(50% + var(--wedge-h) / 2 - 1px)
+    );
 }
 
 .home .home-content{
     max-width: 44rem;
+    /* the rotating profession wheel is absolutely positioned and would
+       otherwise paint its opaque label background over this text */
+    position: relative;
+    z-index: 1;
 }
 
 .home-content h3{
@@ -135,8 +195,9 @@ section{
 }
 
 .home-content p{
-    font-family:'Josefin Sans','Times New Roman', Times, serif;
-    font-size: 2rem;
+    font-family:'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 1.7rem;
+    line-height: 1.7;
 }
 
 .home-content .social-media a{
@@ -168,6 +229,8 @@ section{
 .home-content .social-media a:hover{
     background: var(--main-color);
     color: var(--white-color);
+    transform: translateY(-.5rem);
+    box-shadow: 0 .5rem 1rem var(--shadow-color);
 }
 
 .btn{
@@ -187,7 +250,9 @@ section{
 .btn:hover{
     background: transparent;
     color: var(--main-color);
-    border-color: var(--main-color); 
+    border-color: var(--main-color);
+    transform: translateY(-.3rem);
+    box-shadow: 0 .6rem 1.2rem var(--shadow-color);
 }
 
 .home .profession-container{
@@ -195,15 +260,18 @@ section{
     top:50%;
     right: 0;
     transform: translateY(-50%);
-    width: 768px;
-    height: 768px;
+    width: var(--wedge-w);
+    height: var(--wedge-h);
     overflow: hidden;
     pointer-events: none; 
 }
 .home .profession-container .profession-box{
     position: absolute;
     top: 0;
-    right: 0;
+    /* nudged right so the rotating labels clear the home-content text.
+       don't exceed ~7rem: the .overlay triangle paints on top of the labels
+       (it's a later sibling), so a bigger shift clips the longest one. */
+    right: -7rem;
     width: 768px;
     height: 768px;
     border-radius: 50%;
@@ -240,8 +308,26 @@ section{
     color: var(--main-color);
     transform: rotate(calc(360deg / 4 * var(--i)));
     transform-origin: 384px;
-    background: var(--bg-color);
+
+    /* No background here - it lives on the icon and the words instead, below.
+       The card's box is far bigger than what's drawn in it: as wide as the
+       longest label all the way up past the icon, plus this padding. Filled
+       opaque, all of that quietly cut holes in whatever passed behind it - a
+       floater would lose an arc to a corner sitting 13px below the words, with
+       nothing on screen to explain the bite. The padding stays: it's what
+       spaces the card, and the nth-child rules below build on it. */
     padding: 13px 0;
+}
+
+/* The icon and the label, wrapped so the pair can be turned as one unit. It
+   carries the column layout that used to sit on .profession itself: a bare
+   <span> here would leave the <svg> as inline content and the icon would drift
+   off centre. Only the phone layout ever rotates it - see the media query at
+   the foot of this file - but the layout has to hold at every width. */
+.home .profession-box .profession-inner{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .home .profession-box .profession:nth-child(1) i{
@@ -258,9 +344,10 @@ section{
 }
 
 .home .profession-box .profession:nth-child(2){
-    translate: 0px 50px;
+    /* was 50px to centre the old two-line "Prompt Engineer" label;
+       resolves to a rightward shift on screen, so a one-line label needs 0 */
+    translate: 0px 0px;
 }
-
 
 .home .profession-box .profession:nth-child(3){
     translate: 0px 0px;
@@ -279,23 +366,137 @@ section{
     font-weight: 600;
 }
 
+/* The opaque backing the ring needs, kept to the two things actually drawn.
+   They are adjacent flex items with no gap between them, so together they
+   still cover the ring in one unbroken run from the top of the icon to the
+   bottom of the words - and nothing else behind the card is touched. */
+.home .profession-box .profession svg,
+.home .profession-box .profession h3{
+    background: var(--bg-color);
+}
+
+/* The icon is only 4rem wide in a card three times that, and the ring crosses
+   about 2rem left of the card's centre - just outside the icon's own box. This
+   widens the backing enough to catch it. Horizontal only, and still narrower
+   than the shortest label, so no card changes size. */
+.home .profession-box .profession svg{
+    /* against the global border-box: these carry width="40", so border-box
+       padding would eat the icon rather than sit beside it */
+    box-sizing: content-box;
+    padding: 0 2rem;
+}
+
+/* --- the wheel's ring, and its phase countdown ---
+   Only about 70deg of this circle is ever on screen: the ring's centre sits
+   70px inside the .overlay wedge, so 145deg-215deg (measured the SVG way,
+   from 3 o'clock, clockwise) is the whole visible window and the other 81%
+   is behind the indigo. Anything drawn outside that window is wasted, which
+   is why the fill below is exactly 70deg wide and pinned to 145deg.
+
+   That 70px offset is constant, incidentally - both the ring's centre and
+   the wedge apex are measured from the viewport's right edge, so the window
+   doesn't move as the page is resized. */
 .home  .profession-box .circle{
     width: 560px;
     height: 560px;
-    border: 3px solid var(--main-color);
-    border-radius: 50%;
+    color: var(--main-color);
+    fill: none;
+    stroke: currentColor;
+
+    /* Behind the labels. The ring passes through x~104 in box coordinates and
+       the labels span x~35-215, so it crosses straight through the words. The
+       .profession boxes already carry an opaque --bg-color background for
+       exactly this reason; they just needed to be in front of it. z-index
+       applies here despite this being a static element, because it's a flex
+       item - and .profession-box is animated, so the stacking context stays
+       local and .overlay still covers the ring on the right. */
+    z-index: -1;
+
+    /* Exactly cancels professionRotate on the parent - same keyframe stops,
+       same duration, same easing, opposite direction - so the ring is
+       visually static while still living inside the box that positions it.
+       Counter-rotating beats moving it out to .profession-container, which
+       would mean re-deriving its centre at every breakpoint the box shifts. */
+    animation: professionCounter 15s ease-out infinite;
+}
+
+/* Used only by the phone layout - see the media query at the foot of this
+   file. A role is up for its own quarter of the wheel's turn and down for the
+   other three, so no second label can be caught halfway into view.
+
+   The 20% matters: professionRotate holds a role still for the first 20% of
+   each quarter and spends the rest turning. Fading out any later than that
+   leaves a label three-quarters visible while it is already sliding off the
+   top of the wheel - which is a label adrift over the hero, and exactly what
+   the earlier 24% produced. Gone by 20%.
+
+   Coming back is a cut, not a fade, for the same reason in reverse: a fade
+   spread over the last few percent had the label already at three-quarters
+   opacity while it was still sliding into place, sitting visibly off-centre.
+   It appears at the instant it lands - which is also what the wide layout
+   does, where the label is wiped into view by the edge of the wedge. */
+@keyframes roleAtFront{
+    0%, 18%     { opacity: 1; }
+    20%, 99.9%  { opacity: 0; }
+    100%        { opacity: 1; }
+}
+
+@keyframes professionCounter{
+    0%, 20%  { transform: rotate(0deg); }
+    25%, 45% { transform: rotate(90deg); }
+    50%, 70% { transform: rotate(180deg); }
+    75%, 95% { transform: rotate(270deg); }
+    100%     { transform: rotate(360deg); }
+}
+
+.home .profession-box .circle .ring{
+    stroke-width: 3;
+    opacity: .4;
+}
+
+/* The countdown. Circumference at r=277 is 1740.4, and 70deg of that is
+   338.4 - the exact width of the visible window. The dash grows from nothing
+   to that length, so the arc fills across the window rather than sliding
+   through it. The 1740.4 gap is longer than the circle, so only ever one
+   dash is drawn. */
+.home .profession-box .circle .phase{
+    stroke-width: 5;
+    stroke-dasharray: 0 1740.4;
+
+    /* Fills downwards. A dash can only ever grow along the path, and an SVG
+       circle's path runs clockwise from 3 o'clock - so growing from 145deg
+       (lower-left) ran bottom-to-top. Mirroring vertically reverses which way
+       the path reads on screen without touching the geometry: the rotate is
+       applied first, putting the start at 145deg, then the flip maps it to
+       215deg (upper-left) and makes the dash grow back down towards 145deg.
+       scaleY(-1) has |determinant| 1, so the stroke width is unaffected. */
+    transform: scaleY(-1) rotate(145deg);
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: phaseFill 3.75s linear infinite;
+}
+
+/* 3.75s is one quarter of the wheel's 15s, so this repeats exactly four
+   times per turn and stays in step. professionRotate holds a role at the
+   front for the first 3s of each quarter and spends the last 0.75s turning -
+   so the arc fills over that 3s (80%) and clears while the wheel moves. */
+@keyframes phaseFill{
+    0%   { stroke-dasharray: 0 1740.4;     opacity: 1; }
+    80%  { stroke-dasharray: 338.4 1740.4; opacity: 1; }
+    93%  { stroke-dasharray: 338.4 1740.4; opacity: 0; }
+    100% { stroke-dasharray: 0 1740.4;     opacity: 0; }
 }
 
 .home .profession-container .overlay{
     position: absolute;
     top: 0;
-    right: 0;
+    right: calc(-1 * var(--wedge-x));
     width: 0;
     height: 0;
-    border-top: 384px solid var(--main-color);
-    border-right: 384px solid var(--main-color);
-    border-bottom: 384px solid var(--main-color);
-    border-left: 384px solid transparent;
+    border-top: var(--wedge-notch) solid var(--main-color);
+    border-right: var(--wedge-notch) solid var(--main-color);
+    border-bottom: var(--wedge-notch) solid var(--main-color);
+    border-left: var(--wedge-notch) solid transparent;
 }
 
 span{
@@ -309,8 +510,65 @@ span{
     gap: 4rem;
 }
 
+/* perspective lives on the wrapper so the tilt on the image inside reads as
+   depth rather than a flat squash. Js/about.js drives every effect from the
+   <img> inside rather than from this element.
+
+   The shadow is the exception, and sits here on purpose. `drop-shadow` traces
+   the alpha of whatever it is given, so cast from the wrapper it follows the
+   image's rendered result - already tilted, already clipped by the wipe - and
+   the silhouette of the artwork rather than a rectangle around it. Put on the
+   <img> instead it would be cut off, because clip-path trims the element after
+   its filter has been drawn, taking the shadow with it.
+
+   The two offsets are custom properties so about.js can steer them from the
+   pointer: the light stays put while the picture turns under it. */
+.about-img{
+    perspective: 1000px;
+
+    --sh-x: 0rem;
+    --sh-y: 1.4rem;
+
+    /* Its own colours rather than --shadow-color, which is tuned for the light
+       1px card shadows elsewhere and is far too faint to ground an image. */
+    --sh-near: rgba(0,0,0,.38);
+    --sh-far:  rgba(0,0,0,.3);
+
+    /* Two shadows, not one: a tight dark pass that anchors the artwork to the
+       page and a wide soft pass that gives it height above it. A single shadow
+       has to choose between the two and reads as either a hard sticker or a
+       grey haze. Chained, so the soft pass also picks up the tight one, which
+       is what deepens the core. */
+    filter: drop-shadow(calc(var(--sh-x) * .4) calc(var(--sh-y) * .4) 1rem var(--sh-near))
+            drop-shadow(var(--sh-x) var(--sh-y) 3rem var(--sh-far));
+
+    /* Matched to the .35s on the image's own tilt, so shadow and picture
+       arrive together instead of the shadow snapping ahead. */
+    transition: filter .35s ease;
+}
+
+/* Deeper again on dark, where a .38 black over a near-black page barely
+   registers. */
+.dark-mode .about-img{
+    --sh-near: rgba(0,0,0,.8);
+    --sh-far:  rgba(0,0,0,.65);
+}
+
 .about-img img{
     width: 40vw;
+
+    /* `height: auto` matters for an SVG in particular: unDraw and friends ship
+       their files with width="..." height="..." attributes, and if only the
+       width is overridden in CSS that height attribute still applies - which
+       stretches the drawing. This makes it follow the viewBox ratio instead. */
+    height: auto;
+    display: block;
+
+    /* Only `transform`, deliberately. Js/about.js writes `translate` (parallax)
+       and `clip-path` (wipe) on this element every frame while scrolling, and
+       transitioning those would make them lag the scroll instead of tracking
+       it. `transform` carries the cursor tilt, which does want easing. */
+    transition: transform .35s ease;
 }
 
 .heading{
@@ -328,9 +586,33 @@ span{
 }
 
 .about-content p{
-    font-family:'Josefin Sans','Times New Roman', Times, serif;
-    font-size: 2rem;
+    font-family:'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 1.7rem;
+
+    /* Inter carries a much larger x-height than the Belanosima headings, so it
+       needs a looser leading than the 1.2 the browser would inherit here. */
+    line-height: 1.7;
+
+    /* Justified, but only because hyphenation is on to pay for it. Justify
+       alone in a column this narrow opens rivers of white space: with no
+       permission to break a word, the browser can only push a long one to the
+       next line and stretch the gaps on the line it left behind. `hyphens`
+       gives it the other option, which is what keeps the spacing even.
+
+       It needs the language to be declared to pick a dictionary - index.html
+       carries `lang="en"` on <html>, so removing that would silently turn
+       hyphenation off and leave the gaps behind. */
     text-align: justify;
+    -webkit-hyphens: auto;
+    hyphens: auto;
+
+    /* Don't hyphenate anything shorter than 7 characters, and never leave a
+       fragment under 3 either side of the break - the defaults are looser and
+       will strand things like "de-" at a line end. */
+    -webkit-hyphenate-limit-before: 3;
+    -webkit-hyphenate-limit-after: 3;
+    hyphenate-limit-chars: 7 3 3;
+
     margin: 2rem 0 3rem;
 }
 
@@ -343,16 +625,19 @@ span{
     margin-bottom: 5rem;
 }
 
+/* Grid rather than flex, matching `.portfolio-container` below. Under flex with
+   `align-items: center` each box was only as tall as its own text and then
+   centred, so the three ended up different heights; and because they were
+   `flex: 1 1 30rem`, a box that wrapped onto its own row grew to the full
+   container width. Grid tracks are equal by construction and stretch to the
+   tallest row, so neither can happen. */
 .services .services-container{
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 2rem;
 }
 
 .services-container .services-box{
-    flex: 1 1 30rem;
     background: var(--bg-color);
     padding: 3rem 2rem 4rem;
     border-radius: 2rem;
@@ -363,9 +648,12 @@ span{
     transition: .5s ease;
 }
 
+/* `scale` rather than `transform: scale()` - an independent transform property,
+   so it composes with anything written to `transform` instead of competing for
+   the same slot. */
 .services-container .services-box:hover{
     box-shadow: 0 .1rem 2rem var(--shadow-color);
-    transform: scale(1.05);
+    scale: 1.05;
 }
 
 .services-box i{
@@ -382,7 +670,12 @@ span{
 }
 
 .services-box p{
+    /* Same body face as `.about-content p`. Left-aligned rather than justified:
+       these columns are far narrower than the about paragraph, and hyphenation
+       can't rescue justification at this measure. */
+    font-family:'Inter', system-ui, -apple-system, sans-serif;
     font-size: 1.6rem;
+    line-height: 1.7;
     margin: 1rem 0 3rem;
 }
 
@@ -397,7 +690,6 @@ span{
 .portfolio .portfolio-container{
     display: grid;
     grid-template-columns: repeat(3,1fr);
-    align-items: center;
     /* background: red; */
     justify-content: center;
     align-content: center;
@@ -407,6 +699,17 @@ span{
 .portfolio-container .portfolio-box{
     position: relative;
     display: flex;
+
+    /* The card sets its own shape rather than inheriting whichever one the
+       screenshot inside it happens to have. Without this each box was as tall
+       as its image's intrinsic ratio, so a squarer image gave a shorter card
+       than a wide one and the row came out ragged.
+
+       Square because the art is: five of the seven project images are 1024x1024
+       and pass through uncropped at this ratio. Only rowbot2 (3:2) and
+       stock_agent (5:4) are trimmed, and only at the left and right edges. */
+    aspect-ratio: 1 / 1;
+
     border-radius: 2rem;
     box-shadow: 0 0 1rem rgba(0,0,0,.1);
     overflow: hidden;
@@ -414,81 +717,218 @@ span{
 
 .portfolio-box img{
     width: 100%;
-    transition: .5ss ease;
-}  
+
+    /* Fill the card and crop the overflow, instead of letter-boxing a
+       differently-shaped image inside it. */
+    height: 100%;
+    object-fit: cover;
+
+    transition: .5s ease;
+}
 
 .portfolio-box:hover img{
     transform: scale(1.1);
 }
 
+/* The base state is the one a touch device gets: a caption permanently sitting
+   in the bottom of the card. A phone has no hover, so anything hidden behind
+   one there is simply unreachable - which would leave this whole section as a
+   row of unlabelled pictures with no way to open the repo. The full-cover
+   overlay is layered back on further down, for pointers that can hover. */
 .portfolio-box .portfolio-layer{
     position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(rgba(0,0,0,.1), var(--main-color));
+    inset: auto 0 0 0;
+    height: auto;
+    max-height: 100%;
+
+    /* Fading up into the artwork rather than stopping on a hard edge, so the
+       image still reads as the card and the caption as something resting on
+       it. */
+    background: linear-gradient(to top,
+                var(--main-color) 55%,
+                rgba(0,0,0,.45) 82%,
+                transparent);
     color: var(--white-color);
     display: flex;
-    justify-content: center;
+    justify-content: flex-end;
     align-items: center;
     flex-direction: column;
     text-align: center;
-    padding: 0 4rem;
-    opacity: 0;
+    padding: 6rem 1.8rem 1.8rem;
+    opacity: 1;
     transition: .5s ease;
 }
 
-.portfolio-box:hover .portfolio-layer{
-    opacity: 1;
-}
-
-
-
 .portfolio-layer h4{
-    font-size: 3rem;
+    font-size: 2.2rem;
+    line-height: 1.25;
 }
 
 .portfolio-layer p{
-    font-size: 1.6rem;
-    margin: .3rem 0 1rem;
+    font-family:'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 1.4rem;
+    line-height: 1.55;
+    margin: .6rem 0 1.2rem;
+
+    /* Clamped rather than hidden. The old rule dropped the description outright
+       below 1200px, which cost the card the only sentence explaining what the
+       project is; three lines keeps the gist without burying the artwork. */
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    overflow: hidden;
 }
 
-/* .portfolio-layer a */
-#external_link{
-    display: inline-flex;
-    justify-content: center;
+/* ============================================================
+   PROJECT CARD ACTIONS
+
+   Both controls sit on the indigo gradient of .portfolio-layer, so they are
+   built as frosted glass rather than flat white: a translucent fill over a
+   blurred backdrop keeps the artwork readable through them, so they read as
+   part of the card instead of stickers pasted on top. Hover inverts that
+   glass to a solid white chip with indigo content, which is the strongest
+   contrast available against the layer behind it.
+   ============================================================ */
+.link_container{
+    display: flex;
     align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    transition: opacity .45s ease .12s,
+                transform .45s cubic-bezier(.2,.7,.3,1) .12s;
+}
+
+/* One shared surface, two shapes. */
+#external_link,
+#live a{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,.16);
+    border: .15rem solid rgba(255,255,255,.45);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    color: var(--white-color);
+
+    /* `scale` rather than `transform`, so the lift composes with whatever the
+       container's entrance is doing to `transform` instead of fighting it. */
+    transition: background .35s ease,
+                color .35s ease,
+                border-color .35s ease,
+                box-shadow .35s ease,
+                scale .35s cubic-bezier(.2,.7,.3,1);
+}
+
+#external_link{
     width: 5rem;
     height: 5rem;
-    background: var(--white-color);
     border-radius: 50%;
+}
+
+/* Structural only - the padding belongs to the <a> so that the whole pill is
+   clickable, not just the text inside it. */
+#live{
+    display: inline-flex;
+}
+
+#live a{
+    font-family:'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 1.7rem;
+    font-weight: 500;
+    padding: 1rem 2.2rem;
+    border-radius: 60px;
 }
 
 .portfolio-layer a i{
     font-size: 2rem;
-    color: #333;
+    color: inherit;
+    transition: rotate .35s cubic-bezier(.2,.7,.3,1);
 }
 
-.link_container{
-    display: flex;
-}
-
-#live{
-    margin-left:30px;
+#external_link:hover,
+#live a:hover,
+#external_link:focus-visible,
+#live a:focus-visible{
     background: var(--white-color);
-    text-decoration:none;
-    padding: 10px;
-    border-radius: 60px;
-    
+    border-color: var(--white-color);
+    color: var(--main-color);
+    box-shadow: 0 .8rem 2rem rgba(0,0,0,.35);
+    scale: 1.08;
 }
 
-#live a{
-    font-size: 2rem;
-    color: #333;
-    
+/* Keyboard users get the same affordance the pointer does, plus a ring - the
+   hover styles above already cover the colour half. */
+#external_link:focus-visible,
+#live a:focus-visible{
+    outline: none;
+    box-shadow: 0 0 0 .4rem rgba(255,255,255,.4);
 }
 
+/* The glyph is an arrow leaving its box; turning it as the chip lifts is what
+   sells the "opens elsewhere" idea. */
+#external_link:hover i,
+#external_link:focus-visible i{
+    rotate: 45deg;
+}
+
+#external_link:active,
+#live a:active{
+    scale: 1.02;
+}
+
+/* ============================================================
+   HOVER-CAPABLE POINTERS ONLY
+
+   Everything above is the always-visible caption, which is what a touch device
+   keeps. Here the card goes back to the reveal-on-hover overlay it had before.
+
+   Gated on pointer capability rather than a width breakpoint on purpose: a
+   small laptop and a large tablet can be the same number of pixels wide and
+   still need opposite treatment, and it is the ability to hover - not the size
+   of the screen - that decides whether hidden content is reachable at all.
+   ============================================================ */
+@media (hover: hover) and (pointer: fine){
+    .portfolio-box .portfolio-layer{
+        inset: 0;
+        height: 100%;
+        justify-content: center;
+        padding: 0 4rem;
+        background: linear-gradient(rgba(0,0,0,.1), var(--main-color));
+        opacity: 0;
+    }
+
+    .portfolio-box:hover .portfolio-layer,
+    .portfolio-box:focus-within .portfolio-layer{
+        opacity: 1;
+    }
+
+    .portfolio-layer h4{
+        font-size: 3rem;
+    }
+
+    /* Room for the whole blurb once the overlay covers the card. Back to a
+       plain block too - leaving it as -webkit-box with the clamp lifted would
+       keep the flex-ish box model for no reason. */
+    .portfolio-layer p{
+        display: block;
+        font-size: 1.6rem;
+        margin: .3rem 0 1rem;
+    }
+
+    /* The buttons get their own beat, arriving just after the text rather than
+       in step with it. Only worth doing where there is a reveal to stagger. */
+    .link_container{
+        opacity: 0;
+        transform: translateY(1.5rem);
+    }
+
+    .portfolio-box:hover .link_container,
+    .portfolio-box:focus-within .link_container{
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 
 /* .center{
     grid-column-start: 2;
@@ -529,32 +969,295 @@ span{
     padding: 3rem 5rem;
     border-top: .8rem solid var(--main-color);
     border-bottom: .8rem solid var(--main-color);
+
+    /* Every card the same size, whatever its content. The slides are flex items
+       so they already stretch to match the tallest, but a one-line title next
+       to a three-line one still left the carousel resizing as it moved between
+       them - the floor is what stops that. In rem, so it tracks the root font
+       size the breakpoints step down. */
+    min-height: 44rem;
+
+    /* Swiper gives each slide `height: 100%`; this keeps the card able to grow
+       past that floor if a future entry needs more room. */
+    height: auto;
 }
 
-.testimonial-slide img{
-     width: 14rem;
-     height: 14rem;
-     object-fit: cover;
-     border-radius: 50%;
-     border: .5rem solid var(--bg-color);
-     outline: .5rem solid var(--main-color);
+/* An icon badge rather than a photo: it keeps the ringed circle the old slides
+   had, without depending on an image hosted somewhere else. */
+.pub-icon{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 9rem;
+    height: 9rem;
+    border-radius: 50%;
+    background: var(--bg-color);
+    outline: .5rem solid var(--main-color);
+    color: var(--main-color);
 }
 
+.pub-icon i{
+    font-size: 4.5rem;
+}
+
+/* --- when the badge carries a venue logo instead of a glyph.
+   The inner disc is pinned white rather than following --bg-color: a crest
+   drawn in dark ink would otherwise vanish into the near-black background in
+   dark mode, and university logos are almost always drawn for white. --- */
+.pub-icon:has(img){
+    background: #fff;
+
+    /* No padding: the logos are pre-squared with their own margin baked in, so
+       the artwork already sits correctly within the circle. Padding here would
+       inset it a second time and leave a white gap inside the ring. */
+    padding: 0;
+}
+
+.pub-icon img{
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+
+    /* The sources are square and so is the badge, so cover and contain agree -
+       nothing is cropped either way. `cover` is the safer default should a
+       future logo arrive at some other ratio. */
+    object-fit: cover;
+}
+
+/* The status is the first thing worth knowing about a paper, so it reads as a
+   badge above the title rather than as a sentence buried in the abstract. */
+.pub-status{
+    display: inline-block;
+    margin-top: 2rem;
+    padding: .4rem 1.4rem;
+    border-radius: 60px;
+    font-family:'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 1.2rem;
+    font-weight: 500;
+    letter-spacing: .08rem;
+    text-transform: uppercase;
+}
+
+.pub-status.is-published{
+    background: var(--main-color);
+    color: var(--white-color);
+}
+
+/* Outlined, not filled: "awaiting publication" is a real state worth stating
+   plainly, but it should not carry the same visual weight as a published one. */
+.pub-status.is-pending{
+    background: transparent;
+    border: .15rem solid var(--main-color);
+    color: var(--main-color);
+}
+
+/* Sized for real paper titles, which run long - at the old 2.5rem these wrapped
+   to four lines and swamped the card. */
 .testimonial-slide h3{
-    font-size: 2.5rem;
-    margin: 2rem 0;
+    font-size: 2.1rem;
+    line-height: 1.3;
+    margin: 1.2rem 0 0;
+    max-width: 52rem;
+    text-align: center;
+    text-wrap: balance;
 }
 
 .testimonial-slide p{
+    font-family:'Inter', system-ui, -apple-system, sans-serif;
     font-size: 1.4rem;
+    line-height: 1.7;
     text-align: center;
+    margin-top: 1rem;
 }
 
-.testimonial-slide a i{
+.pub-actions{
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 1.2rem;
 
-    margin-top: 10px;
-    font-size: 2.5rem;
+    /* `auto` rather than a fixed margin: it absorbs whatever slack the card has
+       left, so the buttons sit on the bottom edge of every slide instead of
+       floating wherever that particular title and abstract happened to end.
+       The padding is the minimum gap when a card is full. */
+    margin-top: auto;
+    padding-top: 2.5rem;
+}
+
+/* Same shape and lift as the project buttons, but solid rather than frosted:
+   these sit on the light card background, where a translucent fill would have
+   nothing to read against. */
+.pub-btn{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .8rem;
+    padding: 1rem 2rem;
+    border-radius: 60px;
+    border: .2rem solid var(--main-color);
+    background: transparent;
     color: var(--main-color);
+    font-family:'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 1.5rem;
+    font-weight: 500;
+    white-space: nowrap;
+
+    /* Clips the sheen to the pill's rounded edge. */
+    position: relative;
+    overflow: hidden;
+
+    transition: background .35s ease,
+                color .35s ease,
+                box-shadow .35s ease,
+                scale .35s cubic-bezier(.2,.7,.3,1);
+}
+
+.pub-btn.is-primary{
+    background: var(--main-color);
+    color: var(--white-color);
+}
+
+/* The primary button is already filled, so it gets a sheen - a soft highlight
+   crossing the face, which reads as gloss rather than a state change it has no
+   room to make. */
+.pub-btn.is-primary::after{
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -70%;
+    width: 45%;
+    background: linear-gradient(100deg,
+                transparent,
+                rgba(255,255,255,.4),
+                transparent);
+    transform: skewX(-20deg);
+    pointer-events: none;
+    transition: left .6s ease;
+}
+
+.pub-btn.is-primary:hover::after,
+.pub-btn.is-primary:focus-visible::after{
+    left: 130%;
+}
+
+.pub-btn i{
+    font-size: 1.9rem;
+
+    /* The glyphs animate rather than transition, so the transform property is
+       left free for the keyframes below to own outright. */
+    display: inline-block;
+}
+
+/* --- the achievement.
+   A medal hangs from a ribbon, so the award swings from its top edge and
+   settles, rather than sliding as a rigid block. Decreasing angles are what
+   make it read as weight coming to rest instead of a wobble. --- */
+@keyframes awardSwing{
+    0%  { transform: rotate(0); }
+    25% { transform: rotate(-13deg); }
+    50% { transform: rotate(9deg); }
+    75% { transform: rotate(-4deg); }
+    100%{ transform: rotate(0); }
+}
+
+.pub-btn:hover .bx-award,
+.pub-btn:focus-visible .bx-award{
+    transform-origin: top center;
+    animation: awardSwing .8s ease-out;
+}
+
+/* --- the document.
+   Lifted off a stack and set back down: up with a slight tilt, past the
+   resting point, then settled. Same physical language as the award swing
+   above, which is what keeps the pair looking like one idea. --- */
+@keyframes docLift{
+    0%  { transform: translateY(0) rotate(0); }
+    35% { transform: translateY(-.5rem) rotate(-7deg); }
+    70% { transform: translateY(.1rem) rotate(3deg); }
+    100%{ transform: translateY(0) rotate(0); }
+}
+
+.pub-btn:hover .bx-file,
+.pub-btn:focus-visible .bx-file{
+    animation: docLift .6s ease-out;
+}
+
+.pub-btn:hover,
+.pub-btn:focus-visible{
+    background: var(--main-color);
+    color: var(--white-color);
+    box-shadow: 0 .6rem 1.6rem var(--shadow-color);
+    scale: 1.05;
+    outline: none;
+}
+
+.pub-btn:focus-visible{
+    box-shadow: 0 0 0 .4rem var(--shadow-color);
+}
+
+.pub-btn:active{
+    scale: 1.01;
+}
+
+/* ============================================================
+   SLIDE ENTRANCE
+
+   The same choreography the project cards use - rise and fade, staggered, on
+   one easing curve - so the two sections read as the same site rather than two
+   different ideas of what motion means here.
+
+   Keyed off .swiper-slide-active, the class Swiper puts on whichever slide is
+   showing. That means it replays on every swipe rather than firing once on
+   first paint, so the movement is there each time a paper comes round.
+
+   `backwards` holds the opening frame through the delay. Without it each
+   element paints at full opacity first and then jumps back to start.
+   ============================================================ */
+@keyframes pubRiseIn{
+    from{
+        opacity: 0;
+        transform: translateY(1.6rem);
+    }
+    to{
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.testimonial-slide.swiper-slide-active .pub-icon,
+.testimonial-slide.swiper-slide-active .pub-status,
+.testimonial-slide.swiper-slide-active h3,
+.testimonial-slide.swiper-slide-active p,
+.testimonial-slide.swiper-slide-active .pub-btn{
+    animation: pubRiseIn .55s cubic-bezier(.2,.7,.3,1) backwards;
+}
+
+/* Roughly 80ms apart: close enough to read as one movement, far enough apart
+   that the eye follows it down the card. */
+.testimonial-slide.swiper-slide-active .pub-icon{
+    animation-delay: .05s;
+}
+
+.testimonial-slide.swiper-slide-active .pub-status{
+    animation-delay: .13s;
+}
+
+.testimonial-slide.swiper-slide-active h3{
+    animation-delay: .21s;
+}
+
+.testimonial-slide.swiper-slide-active p{
+    animation-delay: .29s;
+}
+
+.testimonial-slide.swiper-slide-active .pub-btn:nth-child(1){
+    animation-delay: .37s;
+}
+
+.testimonial-slide.swiper-slide-active .pub-btn:nth-child(2){
+    animation-delay: .45s;
 }
 
 .testimonial-box .swiper-button-next,
@@ -599,12 +1302,52 @@ span{
 .contact form textarea{
     width: 100%;
     padding: 1.5rem;
+    font-family:'Inter', system-ui, -apple-system, sans-serif;
     font-size: 1.6rem;
     color: var(--text-color);
-    background: var(--bg-color);
     border-radius: .8rem;
     margin: .7rem 0;
     box-shadow: 0 .1rem .5rem var(--shadow-color);
+
+    /* `background-color`, not the `background` shorthand: the shorthand resets
+       background-image, and the focus underline below is drawn as one. A real
+       element would be cleaner, but an <input> is replaced content and cannot
+       carry ::before or ::after, so the gradient is the way in. */
+    background-color: var(--bg-color);
+    background-image: linear-gradient(var(--main-color), var(--main-color));
+    background-repeat: no-repeat;
+    background-position: 50% 100%;
+    background-size: 0 .25rem;
+
+    /* `translate` rather than `transform`, matching the rest of the page, so
+       the lift never competes for a property something else may want. */
+    transition: background-size .45s cubic-bezier(.2,.7,.3,1),
+                box-shadow .35s ease,
+                translate .35s cubic-bezier(.2,.7,.3,1);
+}
+
+/* The underline grows from the centre out, and the field lifts off the page.
+   Focus and focus-visible both: a click into a text field should show the same
+   state a tab into it does, unlike a button where that would be noise. */
+.contact form .input-box input:focus,
+.contact form textarea:focus{
+    background-size: 100% .25rem;
+    box-shadow: 0 .6rem 1.8rem var(--shadow-color);
+    translate: 0 -.3rem;
+}
+
+/* The placeholder steps aside as you start typing rather than sitting at full
+   strength behind the caret. */
+.contact form input::placeholder,
+.contact form textarea::placeholder{
+    opacity: .6;
+    transition: opacity .3s ease, transform .3s ease;
+}
+
+.contact form input:focus::placeholder,
+.contact form textarea:focus::placeholder{
+    opacity: .3;
+    transform: translateX(.6rem);
 }
 
 .contact form .input-box input{
@@ -615,14 +1358,66 @@ span{
     resize: none;
 }
 
+/* --- the send button.
+   A light band sweeps across the fill on hover. It is painted as a background
+   gradient wider than the button and slid into place, because <input type=
+   "submit"> is replaced content: the ::after a sheen would normally use is not
+   available on it. Overriding the shared `.btn:hover`, which empties the
+   background - this is the page's primary action and reads better staying
+   solid. --- */
 .contact form .btn{
     margin-top: 2rem;
     cursor: pointer;
+    background-image: linear-gradient(110deg,
+                      transparent 25%,
+                      rgba(255,255,255,.35) 50%,
+                      transparent 75%);
+    background-repeat: no-repeat;
+    background-size: 250% 100%;
+    background-position: 130% 0;
+    transition: background-position .7s ease,
+                background-color .4s ease,
+                color .4s ease,
+                border-color .4s ease,
+                box-shadow .4s ease,
+                transform .4s cubic-bezier(.2,.7,.3,1);
 }
 
+.contact form .btn:hover,
+.contact form .btn:focus-visible{
+    background-color: var(--main-color);
+    background-position: -30% 0;
+    color: var(--white-color);
+    border-color: var(--main-color);
+    transform: translateY(-.3rem);
+    box-shadow: 0 .8rem 2rem var(--shadow-color);
+}
+
+.contact form .btn:active{
+    transform: translateY(-.1rem);
+}
+
+/* Arrives rather than appearing: script.js writes the text straight into this
+   element, so `:not(:empty)` is what tells the animation a result has landed. */
 #statusMessage{
     margin: 10px;
+    font-family:'Inter', system-ui, -apple-system, sans-serif;
     font-size: 1.5rem;
+}
+
+@keyframes statusIn{
+    from{
+        opacity: 0;
+        transform: translateY(-.9rem);
+    }
+    to{
+        opacity: 1;
+        transform: none;
+    }
+}
+
+#statusMessage:not(:empty){
+    animation: statusIn .45s cubic-bezier(.2,.7,.3,1);
 }
 
 .footer{
@@ -660,6 +1455,388 @@ span{
     color: #333;
 }
 
+/* ============================================================
+   HERO MOTION
+   The wheel runs on a 15s loop (see professionRotate). Every icon
+   animation below is also 15s, so each one stays locked to the slot
+   it belongs to without any JS:
+     slot 0  AI Engineer      upright  0-20%
+     slot 1  GenAI Developer  upright 25-45%
+     slot 2  Agentic Systems  upright 50-70%
+     slot 3  ML Researcher    upright 75-95%
+   ============================================================ */
+
+/* --- drifting background shapes --- */
+/* --- drifting background shapes, one layer per section.
+
+   `absolute`, not `fixed`: fixed pins the layer to the viewport, so the shapes
+   ride along with the scroll instead of belonging to the page. Absolute keeps
+   them anchored to their section, moving with the content as it scrolls.
+
+   `overflow: visible` is what lets a shape leave its own section and drift on
+   into the next - clipping here is what would trap each one in its own box.
+
+   z-index -1 puts the layer behind the section's content. The sections paint no
+   background of their own (the colour comes from <body>), so a shape that has
+   wandered across a boundary stays visible over its neighbour rather than
+   disappearing behind it. --- */
+.floaters{
+    position: absolute;
+    inset: 0;
+    overflow: visible;
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* The layer needs a positioned ancestor to measure against, or it resolves
+   against the initial containing block and lands in the wrong place.
+
+   `.home` is deliberately absent: style.css relies on `.home::before` having no
+   positioned ancestor so its gradient sizes against the initial containing
+   block. The hero's own layer inherits that same behaviour, which is how it
+   already worked. */
+.about,
+.services,
+.portfolio,
+.testimonial-container,
+.contact{
+    position: relative;
+}
+
+.floaters span{
+    position: absolute;
+    display: block;
+    border: .2rem solid var(--main-color);
+    opacity: .16;
+
+    /* Two animations at once, deliberately: `floatCross` owns `transform` for
+       the long climb, `floatSway` owns the independent `translate` property for
+       the wander. Splitting them across two properties is what lets the paths
+       compose instead of one overwriting the other. */
+    animation: floatCross 30s ease-in-out infinite alternate,
+               floatSway 11s ease-in-out infinite;
+}
+
+.dark-mode .floaters span{
+    opacity: .3;
+}
+
+/* A 45vh climb: far enough that a shape starting near a section's edge travels
+   well past it into the neighbouring one, which is the whole point of leaving
+   the layer unclipped. `alternate` walks it back down rather than snapping to
+   the start, so the loop never visibly resets. */
+@keyframes floatCross{
+    from{ transform: translateY(0)     rotate(0deg); }
+    to  { transform: translateY(-45vh) rotate(140deg); }
+}
+
+/* A second, smaller motion on top, so the path wanders rather than running
+   dead straight up and down. Kept narrow deliberately: a wider sway carries the
+   shapes near the hero over the wedge, and they have no business on the indigo. */
+@keyframes floatSway{
+    0%, 100%{ translate: 0 0; }
+    50%     { translate: 4vw 0; }
+}
+
+/* Spread across the width and down the section. The negative delays start each
+   loop part-finished, so the shapes are scattered along their paths at load
+   instead of setting off together. */
+.floaters .f1{ top: 14%; left:  6%; width: 6rem;   height: 6rem;   border-radius: 50%; animation-duration: 34s, 13s; animation-delay:  -3s,  0s; }
+.floaters .f2{ top: 68%; left: 17%; width: 2.6rem; height: 2.6rem; rotate: 15deg;      animation-duration: 27s, 10s; animation-delay: -14s, -3s; }
+.floaters .f3{ top: 33%; left: 38%; width: 1.4rem; height: 1.4rem; border-radius: 50%; animation-duration: 23s,  9s; animation-delay:  -8s, -5s; border: none; background: var(--main-color); }
+.floaters .f4{ top: 82%; left: 57%; width: 4.6rem; height: 4.6rem; border-radius: 50%; animation-duration: 38s, 15s; animation-delay: -21s, -2s; }
+.floaters .f5{ top: 22%; left: 76%; width: 1rem;   height: 1rem;   border-radius: 50%; animation-duration: 25s, 11s; animation-delay: -17s, -7s; border: none; background: var(--main-color); }
+.floaters .f6{ top: 58%; left: 89%; width: 2rem;   height: 2rem;   rotate: 20deg;      animation-duration: 31s, 14s; animation-delay:  -6s, -4s; }
+
+/* Every section shares one set of positions, so alternating sections mirror
+   theirs. One line, and no two consecutive sections read as the same layout. */
+.services .floaters,
+.testimonial-container .floaters{
+    transform: scaleX(-1);
+}
+
+/* Nothing floats over the hero's indigo wedge on purpose: the layer is behind
+   everything (z-index -1) and .overlay is opaque, so a shape drifting right
+   passes behind the wedge and stays there. What used to look like a bug - a
+   shape losing a bite of itself well short of the wedge - was the profession
+   cards' invisible background, and that is fixed at the card instead. */
+
+/* --- first-load hero intro ---
+   Sits above the hero while it plays, but under .header (z-index 100) so the
+   nav stays reachable. Same positioning caveat as .floaters above: no
+   positioned ancestor, so `inset: 0` resolves against the initial containing
+   block, which is the box the hero occupies.
+
+   Gated on .anim-ready, which index.html adds inline only when scripting is
+   live. Without JS the curtain would have nothing to lift it, and the hero
+   would sit under a solid indigo panel forever. */
+.hero-intro{
+    display: none;
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.anim-ready .hero-intro{
+    display: block;
+}
+
+.hero-intro-fill{
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: block;
+    will-change: transform;
+    background: var(--main-color);
+
+    /* full cover from the first paint, before the script has measured
+       anything - otherwise the finished hero flashes for a frame. JS then
+       replaces these with its own px size and the wedge clip-path. */
+    width: 100%;
+    height: 100%;
+}
+
+/* --- profession icons: scale/rotate about each shape's own centre --- */
+#ai-engineer .chip-core,
+#genai-developer .spark,
+#agentic-systems .bot-eye,
+#ml-researcher circle{
+    transform-box: fill-box;
+    transform-origin: center;
+}
+
+/* AI Engineer - the core pulses */
+#ai-engineer .chip-core{
+    animation: chipPulse 15s ease-in-out infinite;
+}
+
+@keyframes chipPulse{
+    0%, 3%, 19%, 100%{ transform: scale(1);    opacity: 1; }
+    8%               { transform: scale(1.35); opacity: .5; }
+    13%              { transform: scale(1);    opacity: 1; }
+    16%              { transform: scale(1.25); opacity: .6; }
+}
+
+/* GenAI Developer - the sparkles twinkle out of sync with each other */
+#genai-developer .spark{
+    animation: sparkTwinkle 15s ease-in-out infinite;
+}
+
+#genai-developer .spark-b{
+    animation-name: sparkTwinkleAlt;
+}
+
+@keyframes sparkTwinkle{
+    0%, 26%, 44%, 100%{ transform: scale(1)   rotate(0deg);   opacity: 1; }
+    32%               { transform: scale(1.3) rotate(20deg);  opacity: .65; }
+    38%               { transform: scale(.85) rotate(-10deg); opacity: 1; }
+}
+
+@keyframes sparkTwinkleAlt{
+    0%, 26%, 44%, 100%{ transform: scale(1)    rotate(0deg);   opacity: 1; }
+    30%               { transform: scale(.7)   rotate(-25deg); opacity: .5; }
+    36%               { transform: scale(1.45) rotate(15deg);  opacity: 1; }
+}
+
+/* Agentic Systems - the robot blinks twice and bobs */
+#agentic-systems .bot-eye{
+    animation: botBlink 15s steps(1, end) infinite;
+}
+
+@keyframes botBlink{
+    0%, 55%, 57%, 63%, 65%, 100%{ transform: scaleY(1); }
+    56%, 64%                    { transform: scaleY(.12); }
+}
+
+#agentic-systems svg{
+    animation: botBob 15s ease-in-out infinite;
+}
+
+@keyframes botBob{
+    0%, 51%, 69%, 100%{ transform: translateY(0); }
+    58%               { transform: translateY(-.4rem); }
+    66%               { transform: translateY(-.15rem); }
+}
+
+/* ML Researcher - a signal fires left to right through the layers.
+   The staggered delays shift each column's pulse later in the cycle. */
+#ml-researcher .nn-a,
+#ml-researcher .nn-b,
+#ml-researcher .nn-c{
+    animation: nnFire 15s ease-in-out infinite;
+}
+
+#ml-researcher .nn-b{ animation-delay: .6s; }
+#ml-researcher .nn-c{ animation-delay: 1.2s; }
+
+@keyframes nnFire{
+    0%, 77%, 84%, 100%{ transform: scale(1);   opacity: .8; }
+    80%               { transform: scale(1.6); opacity: 1; }
+}
+
+/* --- social buttons: staggered entrance --- */
+.social-media a{
+    animation: socialIn .55s ease backwards;
+}
+
+.social-media .programming:nth-of-type(1){ animation-delay: .75s; }
+.social-media .programming:nth-of-type(2){ animation-delay: .85s; }
+.social-media .programming:nth-of-type(3){ animation-delay: .95s; }
+.social-media #check a:nth-of-type(1){ animation-delay: 1.05s; }
+.social-media #check a:nth-of-type(2){ animation-delay: 1.15s; }
+.social-media #check a:nth-of-type(3){ animation-delay: 1.25s; }
+
+@keyframes socialIn{
+    from{ opacity: 0; transform: translateY(1.2rem) scale(.85); }
+    to  { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* --- tagline typing --- */
+.home-content .tagline{
+    position: relative;
+}
+
+/* opt out of the global `span { color: var(--main-color) }` accent rule */
+.home-content .tagline-text,
+.home-content .tagline-typed{
+    color: inherit;
+}
+
+.home-content .tagline-typed{
+    display: none;
+}
+
+/* .is-typing is added by the script and removed once the text is complete,
+   so the markup ends up back in its original, plain state */
+.home-content .tagline.is-typing .tagline-text{
+    visibility: hidden;
+}
+
+.home-content .tagline.is-typing .tagline-typed{
+    display: block;
+    position: absolute;
+    inset: 0;
+}
+
+.home-content .tagline.is-typing .tagline-typed::after{
+    content: '';
+    display: inline-block;
+    width: .2rem;
+    height: 1em;
+    margin-left: .3rem;
+    background: var(--main-color);
+    vertical-align: -.15em;
+    animation: caretBlink 1s steps(1) infinite;
+}
+
+@keyframes caretBlink{
+    0%, 49%  { opacity: 1; }
+    50%, 100%{ opacity: 0; }
+}
+
+/* --- respect reduced-motion.
+   The wheel itself keeps turning: stopping it would hide three of the four
+   titles entirely, which loses information rather than just polish. --- */
+@media (prefers-reduced-motion: reduce){
+    /* hero-intro.js bails out here too; these back it up so a curtain can
+       never be left over the hero. */
+    .floaters,
+    .anim-ready .hero-intro{
+        display: none;
+    }
+
+    #ai-engineer .chip-core,
+    #genai-developer .spark,
+    #agentic-systems .bot-eye,
+    #agentic-systems svg,
+    #ml-researcher circle,
+    .social-media a{
+        animation: none !important;
+    }
+
+    .home-content .social-media a:hover,
+    .btn:hover{
+        transform: none;
+    }
+
+    /* The project buttons keep their colour change - that is the affordance -
+       and lose only the travel: no rise on the container, no lift, no turn. */
+    .link_container{
+        transform: none;
+        transition: opacity .45s ease;
+    }
+
+    #external_link:hover,
+    #live a:hover,
+    #external_link:focus-visible,
+    #live a:focus-visible{
+        scale: 1;
+    }
+
+    #external_link:hover i,
+    #external_link:focus-visible i{
+        rotate: 0deg;
+    }
+
+    /* The publication buttons keep the colour change and lose the movement:
+       no sheen, no swing or lift on the glyphs, and no staggered entrance. */
+    .pub-btn.is-primary::after{
+        display: none;
+    }
+
+    .pub-btn:hover .bx-award,
+    .pub-btn:focus-visible .bx-award,
+    .pub-btn:hover .bx-file,
+    .pub-btn:focus-visible .bx-file,
+    .testimonial-slide.swiper-slide-active .pub-icon,
+    .testimonial-slide.swiper-slide-active .pub-status,
+    .testimonial-slide.swiper-slide-active h3,
+    .testimonial-slide.swiper-slide-active p,
+    .testimonial-slide.swiper-slide-active .pub-btn{
+        animation: none;
+    }
+
+    .pub-btn:hover,
+    .pub-btn:focus-visible{
+        scale: 1;
+    }
+
+    .pub-btn:hover i,
+    .pub-btn:focus-visible i{
+        transform: none;
+    }
+
+    /* The contact form keeps every cue and loses the travel: the focus
+       underline still draws (it is the only thing marking the active field
+       now that the global reset has removed the browser outline), but the
+       fields stop lifting, the button stops sweeping and rising, and the
+       status message appears rather than sliding in. */
+    .contact form .input-box input:focus,
+    .contact form textarea:focus{
+        translate: none;
+    }
+
+    .contact form input:focus::placeholder,
+    .contact form textarea:focus::placeholder{
+        transform: none;
+    }
+
+    .contact form .btn{
+        background-image: none;
+    }
+
+    .contact form .btn:hover,
+    .contact form .btn:focus-visible,
+    .contact form .btn:active{
+        transform: none;
+    }
+
+    #statusMessage:not(:empty){
+        animation: none;
+    }
+}
 
 /* BREAKPOINTS */
  @media (max-width: 1200px){
@@ -667,17 +1844,16 @@ span{
         font-size: 55%;
     }
 
-    .home .profession-container{
-        height: 85.8rem;
+    /* A shorter column, nudged 9rem right. The strips, the overlay and the
+       clip on the wedge copy of the floaters all track these. */
+    .home{
+        --wedge-h: 85.8rem;
+        --wedge-x: 9rem;
     }
 
     .home .profession-container .profession-box {
         right: -12rem;
         height: 85.8rem;
-    } 
-
-    .home .profession-container .overlay{
-        right: -9rem;
     }
  }
 
@@ -719,21 +1895,13 @@ span{
         right: -45rem;
     }
 
-    .home .profession-container .overlay{
-        right: -39.5rem;
-    }
-
-    .home-img img{
-        display: none;
+    /* the wedge slides further off to the right to leave the text room */
+    .home{
+        --wedge-x: 39.5rem;
     }
 
     .services, .portfolio{
         padding-bottom: 7rem;
-    }
-
-    .portfolio-layer p{
-        /* visibility: hidden; */
-        display: none;
     }
 
     .contact{
@@ -746,19 +1914,50 @@ span{
  }
 
  @media (max-width: 768px){
+    /* .overlay is rotated 90deg down here, so the sweep the intro measures
+       itself against no longer describes the wedge - and nor do the strips,
+       which track that same box. The nav doesn't need it anyway: it becomes a
+       dropdown with its own --bg-color and dark links.
+
+       The floaters are no longer in this list. They used to be, because they
+       sat inside the hero and would have landed under the centred text at this
+       width; now they are a page-level layer behind everything, so they are as
+       safe here as anywhere. */
+    .home::before,
+    .anim-ready .hero-intro{
+        display: none;
+    }
+
+    /* Fewer of them though - six shapes per section in a phone-width viewport
+       is a crowd rather than an atmosphere. */
+    .floaters .f3,
+    .floaters .f4,
+    .floaters .f6{
+        display: none;
+    }
+
     #menu-icon {
         display: block;
     }
 
+    /* The line break between the two rows of social links, and the wrapper
+       around the second row. Both were hidden here, which quietly cost the
+       phone half the links on the page - LinkedIn, Facebook and Instagram
+       simply were not there. The row wraps on its own at this width, so the
+       break is all that needs to go. */
     #break-option{
         display: none;
     }
 
-    #check{
-        /* background-color: red; */
-        display: none;
+    /* Justification is set up carefully further up this file, with hyphenation
+       to absorb long words - but it needs a measure to work with. At this width
+       a line holds around forty characters, too few for the browser to spread
+       the slack without opening rivers through the paragraph. Ranged left is
+       simply better here. */
+    .about-content p{
+        text-align: left;
     }
-    
+
 
     #darkMode-icon{
         position: absolute;
@@ -805,8 +2004,16 @@ span{
     }
 
     .home{
-        padding:  0 3% 23rem;
+        /* a column now, not a text block with a wheel bolted to the side of
+           it. The 23rem of bottom padding this used to carry was reserving
+           space for a wheel pinned with `position: fixed`; the roles sit in
+           the flow below the text instead, so it is no longer needed. */
+        flex-direction: column;
         justify-content: center;
+
+        /* no padding at the foot: the indigo band is the last thing in the
+           column and has to reach the bottom of the screen */
+        padding: 9rem 3% 0;
         text-align: center;
     }
 
@@ -822,66 +2029,143 @@ span{
         margin: 2.5rem .75rem 3rem;
     }
 
+    /* --- the wedge, turned on its side ---
+       The wide layout lays an indigo wedge over the wheel with a triangular
+       bite out of it: the role at the front shows through the bite, the other
+       three stay hidden behind the indigo. This is the same idea a quarter
+       turn round - a band of indigo across the foot of the hero with a shallow
+       V notched out of its top edge, and the current role above it.
+
+       Built from a clip-path rather than the old construction, which rotated
+       .overlay's 384px border-triangle 90deg and stretched it 3x. Nothing in
+       that chain was tied to the viewport, so it landed somewhere different at
+       every width - fine for the one role that is not itself rotated, and cut
+       clean in half for the other three.
+
+       The wheel is barely scaled: at .85 the circle is 653px across and runs
+       off both edges of the screen, which is what makes the arc read as a
+       sweep rather than a small ring, and keeps the label at a readable size.
+       Only the role at the top of the circle is above the band; the other
+       three sit below it, under the indigo or past the container's edge. As
+       the wheel turns each takes that place in turn, exactly as the wedge
+       does on a desktop. */
     .home .profession-container{
-        left: 0;
-        width: 100%;
-        height: 100%;
-    }
-    .home .profession-container .profession-box{
-        position: fixed;
-        top: 60%;
-        left: 0;
-        border-radius: 0;
-        width: 100%;
-    }
-    
-    .home .profession-box .profession{
-        padding: 0 13px;
-        left: auto;
-        transform-origin: 0;
-    }
-    
-    .profession-box{
         position: relative;
-        left: 5px;
-        translate: 0 0;
+        width: 100vw;
+        margin-left: calc(50% - 50vw);   /* full bleed, past .home's padding */
+        height: 300px;
+
+        /* An auto margin beats justify-content, so this drops the band to the
+           foot of the hero however much room the text above it leaves. The
+           hero is min-height:100vh, so the indigo runs to the bottom of the
+           screen rather than stopping short with background beneath it. */
+        margin-top: auto;
+
+        transform: none;
+        overflow: hidden;
+        display: block;
     }
 
-.home .profession-box .profession:nth-child(1){
-    translate: 0px -330px;
-}
+    .home .profession-container .profession-box{
+        position: absolute;
 
-.home .profession-box .profession:nth-child(2){
-    rotate: 180deg;
-    translate: -280px 50px;
-}
+        /* Placed by the front label, not by the box. The label at the top of
+           the wheel sits about 294px above the box's centre, so this puts that
+           label near the top of the container and lets the rest of the circle
+           fall where it may - it is all either behind the band or past the
+           edge. */
+        left: calc(50% - 384px);
 
+        /* The four roles do not sit at the same height, and the reason is
+           worth knowing before touching this number: each label hangs at
+           `384px - its own width / 2` from the wheel's centre, because it is
+           placed by its left edge and spun about a point 384px in. So the
+           narrowest label - "AI Engineer" - orbits on the widest radius and
+           rides some 25px higher at the top than "GenAI Developer" does.
 
-.home .profession-box .profession:nth-child(3){
-    translate: 80px 330px;
-}
+           This leaves room for the highest of them. Set it any tighter and
+           overflow:hidden shaves the top off that one alone. */
+        top: -38px;
+        right: auto;
 
-.home .profession-box .profession:nth-child(4){
-    rotate:-180deg;
-    translate: 400px -80px;
-}
-
-    .home .profession-box .circle{
-        position: fixed;
-        width: 670px;
-        height: 670px;
-        z-index: -1;
-    } 
+        /* `scale`, not a scale() inside `transform` - professionRotate owns
+           transform on this element and would replace it. The separate
+           property composes with the animation instead, the same way
+           floatSway rides alongside floatCross on the background shapes. */
+        scale: .85;
+    }
 
     .home .profession-container .overlay{
-        position: fixed;
-        top: 70rem;
-        left: 50%;
-        right: 0;
-        transform: rotate(90deg) translate(-50%, 50%) scaleY(3);
-        border-width: 23.9rem;
+        position: absolute;
+        top: 120px;
+        left: 0;
+        right: auto;
+        width: 100%;
+        height: calc(100% - 120px);
+
+        /* the border-triangle the wide layout builds the wedge from has
+           nothing to cut here; the notch is the clip instead */
+        border: 0;
+        background: var(--main-color);
+        transform: none;
+        clip-path: polygon(0 0, 50% 90px, 100% 0, 100% 100%, 0 100%);
+    }    /* Nudges that keep the wheel's longest labels clear of the wedge on the
+       wide layout. With the wedge gone they only push labels off their orbit. */
+    .home .profession-box .profession:nth-child(1),
+    .home .profession-box .profession:nth-child(2),
+    .home .profession-box .profession:nth-child(3),
+    .home .profession-box .profession:nth-child(4){
+        translate: none;
+        rotate: none;
     }
 
+    /* --- keeping the labels the right way up ---
+       On the wide layout only the label at the front is ever out from behind
+       the wedge, so the other three being sideways and upside down costs
+       nothing. Here all four are on show, and three of them were unreadable.
+
+       Each label is turned twice: once by its place on the orbit (a static
+       `--i` quarter turn on .profession) and once by the wheel itself
+       (professionRotate on .profession-box). This undoes both, on a wrapper
+       inside the label so it turns about the label's own centre rather than
+       the wheel's:
+
+         `rotate`     cancels the orbital quarter turn - a separate property,
+                      so it composes with the animation below instead of being
+                      replaced by it
+         the animation cancels the wheel, and is the very same keyframes the
+                      ring already uses for the very same reason. */
+    .home .profession-box .profession-inner{
+        rotate: calc(-360deg / 4 * var(--i));
+        animation: professionCounter 15s ease-out infinite;
+    }
+
+    /* --- one role on screen, ever ---
+       The wide layout gets this for free: the wedge's notch is a narrow
+       triangle and everything outside it is under indigo. Here the opening is
+       the width of the screen, so while the wheel turns between roles a second
+       label swings into view beside the first, both cut off at the edges.
+
+       Rather than chase that with a narrower mask - which only trades two
+       clipped labels for one - each label is simply shown for its own quarter
+       of the turn and hidden for the rest. professionRotate holds a role at
+       the front for the first 80% of each quarter and spends the last 20%
+       turning, and these keyframes follow it: up before the hold, down before
+       the wheel moves on.
+
+       The delay staggers them, and it is offset by a quarter for a reason
+       worth writing down: at rest the label at the TOP of the wheel - the one
+       this layout shows - is `--i:1`, not 0. Role 0 carries no rotation of its
+       own, so it sits at the box's left edge, which after the scale is off the
+       left of the screen entirely. The order at the top is 1, 2, 3, 0.
+
+       Every delay is negative so that each role begins mid-animation; a
+       positive one would leave that label sitting at its un-animated opacity
+       until its turn came round, which is a second label on screen. */
+    .home .profession-box .profession{
+        animation: roleAtFront 15s ease-out infinite;
+        animation-delay: calc(var(--i) * 3.75s - 18.75s);
+    }
     .about{
         flex-direction: column-reverse;
         text-align: center;
@@ -901,6 +2185,7 @@ span{
         margin-bottom: 3rem;
     }
 
+    .services .services-container,
     .portfolio .portfolio-container{
         grid-template-columns: repeat(2, 1fr);
     }
@@ -909,8 +2194,11 @@ span{
         padding: 5rem 0;
     } 
 
+    /* No comma: `padding: 3rem, 2rem` is not valid shorthand, so the browser
+       discarded the whole declaration and the slide kept its 5rem desktop
+       side padding at this width. */
     .testimonial-content .testimonial-slide{
-        padding: 3rem, 2rem;  
+        padding: 3rem 2rem;
     }
 
     .testimonial-box .swiper-button-next,
@@ -921,7 +2209,11 @@ span{
 
  @media (max-width: 617px)
  {
-    .portfolio.portfolio-container{
+    /* `.portfolio .portfolio-container`, with the space: without it this reads
+       as one element carrying both classes, which nothing on the page is - so
+       the single-column layout never applied at this width. */
+    .services .services-container,
+    .portfolio .portfolio-container{
         grid-template-columns: 1fr;
     }
  }
@@ -935,29 +2227,20 @@ span{
         right: 6rem;
     }
 
-    .home{
-        padding: 0 3% 30rem;
-    }
+    /* A second copy of the wheel's hand-placed offsets used to live here, and
+       30rem of bottom padding to leave room for the wheel they threw the
+       labels into. Both are gone - left in place they won on specificity and
+       dragged two of the four labels clean off the page, one to x=-94 and one
+       to x=727 in a 390px viewport.
 
-    
-.home .profession-box .profession:nth-child(1){
-    translate: 0px -330px;
-}
-
-.home .profession-box .profession:nth-child(2){
-    rotate: 180deg;
-    translate: -280px 50px;
-}
-
-
-.home .profession-box .profession:nth-child(3){
-    translate: 80px 330px;
-}
-
-.home .profession-box .profession:nth-child(4){
-    rotate:-180deg;
-    translate: 400px -80px;
-}
+       What this width does need is a smaller wheel: 768px at the .55 set above
+       is 422px across, which does not fit a 390px screen. Both numbers here
+       are px on purpose - `html` drops to 50% font-size at this breakpoint, so
+       a rem would silently mean something different from the rule above. */
+    /* The wheel and its notch are already sized for a phone at 768px; this
+       width needs nothing more. Both numbers there are px on purpose - `html`
+       drops to 50% font-size at this breakpoint, so a rem would silently mean
+       something different from the rule above. */
 
      .contact form .input-box input{
         width: 100%;
@@ -978,6 +2261,5 @@ span{
         margin-top: 2rem;
     }
  }
-
 
 

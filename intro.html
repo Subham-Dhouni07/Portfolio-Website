@@ -5,13 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
      <!-- fonts - links -->
-     <!-- Belanosima -->
-     <link href="https://fonts.googleapis.com/css2?family=Belanosima&display=swap" rel="stylesheet">   
+     <!-- Belanosima for headings, Inter for body copy -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <!--Josefin Sans-->
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Belanosima&family=Inter:wght@400;500&display=swap" rel="stylesheet">
 
     <!-- box icon css -->
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
@@ -22,7 +19,26 @@
     <title>About me</title>
 </head>
 <body>
-    
+
+    <!-- One gradient for every dial. It used to be declared inside each of the
+         SVGs under the same id, which is invalid and meant all of them resolved
+         to whichever the parser saw first. Declared once here, the reference is
+         honest about what it points at. -->
+    <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+        <defs>
+            <linearGradient id="ringGradient" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%"   stop-color="#2f2fb2" />
+                <stop offset="100%" stop-color="#7b5cf0" />
+            </linearGradient>
+        </defs>
+    </svg>
+
+    <!-- drifting background shapes (decorative) -->
+    <div class="floaters" aria-hidden="true">
+        <span class="f1"></span><span class="f2"></span><span class="f3"></span>
+        <span class="f4"></span><span class="f5"></span><span class="f6"></span>
+    </div>
+
     <!-- header design -->
     <header class="header">
         <a href="index.html" class="logo">
@@ -56,124 +72,96 @@
         <h3 class="subheading"><span>My</span> Skills</h3>
 
         <div class="skill_container">
-                    <!-- 1st CPP -->
-            <div class="cpp_hidden" id="cpp_container">
-                    <div class="skills_name">Python</div>
-                    <div class="skill"> 
-                        <div class="outer">
-                            <div class="inner">
-                                <div class="cpp_number" style="color: var(--text-color);">
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="160px" height="160px">
-                            <defs>
-                            <linearGradient id="GradientColor">
-                                <stop offset="0%" stop-color="#e91e63" />
-                                <stop offset="100%" stop-color="#673ab7" />
-                            </linearGradient>
-                            </defs>
-                            <circle cx="80" cy="80" r="70" stroke-linecap="round" />
-                        </svg>
 
+            <!-- Ordered by the figure, so the row reads as a ranking rather than
+                 an arbitrary list. Each name is one line at the card's width; a
+                 longer one wraps and drops that card's dial below its
+                 neighbours, since the container aligns on flex-start. The dial
+                 script reads data-pct and nothing else, so cards can be added or
+                 removed here without touching Js/intro.js. -->
+
+            <div class="skill-card" data-pct="90">
+                <div class="skills_name">Python</div>
+                <div class="skill">
+                    <div class="outer">
+                        <div class="inner"><div class="skill-number">0%</div></div>
                     </div>
+                    <svg width="160" height="160" aria-hidden="true" focusable="false">
+                        <circle class="ring-track" cx="80" cy="80" r="70" />
+                        <circle class="ring-fill" cx="80" cy="80" r="70" stroke-linecap="round" />
+                    </svg>
+                    <span class="dial-head" aria-hidden="true"></span>
+                </div>
             </div>
 
-                     <!-- 2nd HTML -->
-            <div id="html_container" class="html_hidden">
-                    <div class="skills_name">C++</div>
-                    <div class="skill"> 
-                        <div class="outer">
-                            <div class="inner">
-                                <div class="html_number" style="color: var(--text-color);">
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="160px" height="160px">
-                            <defs>
-                            <linearGradient id="GradientColor">
-                                <stop offset="0%" stop-color="#e91e63" />
-                                <stop offset="100%" stop-color="#673ab7" />
-                            </linearGradient>
-                            </defs>
-                            <circle cx="80" cy="80" r="70" stroke-linecap="round" />
-                        </svg>
-
+            <div class="skill-card" data-pct="90">
+                <div class="skills_name">Agentic Systems</div>
+                <div class="skill">
+                    <div class="outer">
+                        <div class="inner"><div class="skill-number">0%</div></div>
                     </div>
+                    <svg width="160" height="160" aria-hidden="true" focusable="false">
+                        <circle class="ring-track" cx="80" cy="80" r="70" />
+                        <circle class="ring-fill" cx="80" cy="80" r="70" stroke-linecap="round" />
+                    </svg>
+                    <span class="dial-head" aria-hidden="true"></span>
+                </div>
             </div>
 
-                     <!-- 3rd CSS -->
-            <div id="css_container" class="css_hidden">
-                    <div class="skills_name">Go</div>
-                    <div class="skill"> 
-                        <div class="outer">
-                            <div class="inner">
-                                <div class="css_number" style="color: var(--text-color);">
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="160px" height="160px">
-                            <defs>
-                            <linearGradient id="GradientColor">
-                                <stop offset="0%" stop-color="#e91e63" />
-                                <stop offset="100%" stop-color="#673ab7" />
-                            </linearGradient>
-                            </defs>
-                            <circle cx="80" cy="80" r="70" stroke-linecap="round" />
-                        </svg>
-
+            <div class="skill-card" data-pct="85">
+                <div class="skills_name">RAG &amp; Retrieval</div>
+                <div class="skill">
+                    <div class="outer">
+                        <div class="inner"><div class="skill-number">0%</div></div>
                     </div>
+                    <svg width="160" height="160" aria-hidden="true" focusable="false">
+                        <circle class="ring-track" cx="80" cy="80" r="70" />
+                        <circle class="ring-fill" cx="80" cy="80" r="70" stroke-linecap="round" />
+                    </svg>
+                    <span class="dial-head" aria-hidden="true"></span>
+                </div>
             </div>
 
-                     <!-- 4th JavaScript -->
-            <div id="javascript_container" class="js_hidden">
-                    <div class="skills_name">Machine Learning</div>
-                    <div class="skill"> 
-                        <div class="outer">
-                            <div class="inner">
-                                <div class="js_number" style="color: var(--text-color);">
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="160px" height="160px">
-                            <defs>
-                            <linearGradient id="GradientColor">
-                                <stop offset="0%" stop-color="#e91e63" />
-                                <stop offset="100%" stop-color="#673ab7" />
-                            </linearGradient>
-                            </defs>
-                            <circle cx="80" cy="80" r="70" stroke-linecap="round" />
-                        </svg>
-
+            <div class="skill-card" data-pct="80">
+                <div class="skills_name">C++</div>
+                <div class="skill">
+                    <div class="outer">
+                        <div class="inner"><div class="skill-number">0%</div></div>
                     </div>
+                    <svg width="160" height="160" aria-hidden="true" focusable="false">
+                        <circle class="ring-track" cx="80" cy="80" r="70" />
+                        <circle class="ring-fill" cx="80" cy="80" r="70" stroke-linecap="round" />
+                    </svg>
+                    <span class="dial-head" aria-hidden="true"></span>
+                </div>
             </div>
 
-                     <!-- 5th Sql -->
-            <div id="sql_container" class="sql_hidden">
-                    <div class="skills_name">Web Development</div>
-                    <div class="skill"> 
-                        <div class="outer">
-                            <div class="inner">
-                                <div class="sql_number" style="color: var(--text-color);">
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="160px" height="160px">
-                            <defs>
-                            <linearGradient id="GradientColor">
-                                <stop offset="0%" stop-color="#e91e63" />
-                                <stop offset="100%" stop-color="#673ab7" />
-                            </linearGradient>
-                            </defs>
-                            <circle cx="80" cy="80" r="70" stroke-linecap="round" />
-                        </svg>
-
+            <div class="skill-card" data-pct="75">
+                <div class="skills_name">Computer Vision</div>
+                <div class="skill">
+                    <div class="outer">
+                        <div class="inner"><div class="skill-number">0%</div></div>
                     </div>
+                    <svg width="160" height="160" aria-hidden="true" focusable="false">
+                        <circle class="ring-track" cx="80" cy="80" r="70" />
+                        <circle class="ring-fill" cx="80" cy="80" r="70" stroke-linecap="round" />
+                    </svg>
+                    <span class="dial-head" aria-hidden="true"></span>
+                </div>
+            </div>
+
+            <div class="skill-card" data-pct="75">
+                <div class="skills_name">Backend &amp; APIs</div>
+                <div class="skill">
+                    <div class="outer">
+                        <div class="inner"><div class="skill-number">0%</div></div>
+                    </div>
+                    <svg width="160" height="160" aria-hidden="true" focusable="false">
+                        <circle class="ring-track" cx="80" cy="80" r="70" />
+                        <circle class="ring-fill" cx="80" cy="80" r="70" stroke-linecap="round" />
+                    </svg>
+                    <span class="dial-head" aria-hidden="true"></span>
+                </div>
             </div>
         </div>
     </section>
@@ -181,21 +169,106 @@
         <!-- Timeline design -->
         <section class="timeline" id="timeline">
             
-            <h3 class="subheading"><span>My</span> Education Timeline</h3>
-            
-            <script src="//my.visme.co/visme-embed.js"></script>
-            <iframe id="embedded-project-iframe" title="Instant Messaging Software Development Timeline Roadmap" src="//my.visme.co/_embed/4d1x9r1k-untitled-project" style="border:0" webkitallowfullscreen="true" mozallowfullscreen="true" allowfullscreen=""></iframe>
-            
+            <h3 class="subheading"><span>My</span> Journey</h3>
+
+            <div class="road">
+                <h4 class="road-title">Education &amp; Experience</h4>
+
+                <!-- decorative, and hidden from assistive tech: they carry no
+                     information the milestones below don't already state -->
+                <span class="rocket rk1" aria-hidden="true"><i class='bx bx-rocket'></i></span>
+                <span class="rocket rk2" aria-hidden="true"><i class='bx bx-rocket'></i></span>
+                <span class="rocket rk3" aria-hidden="true"><i class='bx bx-rocket'></i></span>
+
+                <div class="road-track">
+                    <!-- The stops are placed onto this curve by intro.js at run
+                         time, rather than by hand-tuned percentages, so the two
+                         can never drift apart. -->
+                    <svg class="road-svg" viewBox="0 0 1000 440" fill="none" aria-hidden="true">
+                        <!-- Six half-waves, one per stop: the midpoint of each
+                             segment is a crest or a trough, which is where
+                             intro.js drops the node. -->
+                        <path id="roadPath"
+                              d="M 10 230 C 70 145, 130 145, 180 230 C 230 315, 290 315, 340 230
+                                 C 390 145, 450 145, 500 230 C 550 315, 610 315, 660 230
+                                 C 710 145, 770 145, 820 230 C 870 315, 930 315, 990 230"
+                              stroke="var(--road-line)" stroke-width="14"
+                              stroke-linecap="round" />
+                    </svg>
+
+                    <ol class="road-stops">
+                        <li class="stop is-up" style="--tint: var(--stop-peach)">
+                            <span class="stop-node"><i class='bx bx-bulb'></i></span>
+                            <span class="stop-stem"></span>
+                            <div class="stop-label">
+                                <span class="stop-year">2017</span>
+                                <p>High&#8209;School:<br>Building of Basics</p>
+                            </div>
+                        </li>
+
+                        <li class="stop is-down" style="--tint: var(--stop-teal)">
+                            <span class="stop-node"><i class='bx bx-search-alt'></i></span>
+                            <span class="stop-stem"></span>
+                            <div class="stop-label">
+                                <span class="stop-year">2019</span>
+                                <p>Intermediate:<br>Preparing for the future</p>
+                            </div>
+                        </li>
+
+                        <li class="stop is-up" style="--tint: var(--stop-teal)">
+                            <span class="stop-node"><i class='bx bxs-graduation'></i></span>
+                            <span class="stop-stem"></span>
+                            <div class="stop-label">
+                                <span class="stop-year">2023</span>
+                                <p>Bachelor&rsquo;s degree:<br>Expanding Horizons</p>
+                            </div>
+                        </li>
+
+                        <li class="stop is-down" style="--tint: var(--stop-peach)">
+                            <span class="stop-node"><i class='bx bx-laptop'></i></span>
+                            <span class="stop-stem"></span>
+                            <div class="stop-label">
+                                <span class="stop-year">2025</span>
+                                <p>Master&rsquo;s degree:<br>Specialization and advanced learning</p>
+                            </div>
+                        </li>
+
+                        <li class="stop is-up" style="--tint: var(--stop-teal)">
+                            <span class="stop-node"><i class='bx bx-briefcase'></i></span>
+                            <span class="stop-stem"></span>
+                            <div class="stop-label">
+                                <span class="stop-year">Feb &ndash; Aug 2025</span>
+                                <p>AI Engineer Intern:<br>XenonStack</p>
+                            </div>
+                        </li>
+
+                        <!-- TODO(Subham): you wrote Oct 2026, which is in the future
+                             and cannot also be "current" - Oct 2025 assumed. -->
+                        <li class="stop is-down" style="--tint: var(--stop-peach)">
+                            <span class="stop-node"><i class='bx bx-chip'></i></span>
+                            <span class="stop-stem"></span>
+                            <div class="stop-label">
+                                <span class="stop-year">Oct 2025 &ndash; Present</span>
+                                <p>AI Engineer:<br>Actualisation</p>
+                            </div>
+                        </li>
+                    </ol>
+                </div>
+            </div>
+
         </section>
 
         <!-- footer design -->
      <footer class="footer">
         <div class="footer-text">
-            <p>Copyright &copy; 2023 | All Rights Reserved</p>
+            <p>Copyright &copy; 2026 | All Rights Reserved</p>
         </div>
 
         <div class="footer-iconTop">
-            <a href="#heading-content"><i class='bx bxs-up-arrow' ></i></a>
+            <!-- the section, not the paragraph block inside it: #heading-content
+                 starts below the "Welcome to my World" heading, so the arrow
+                 used to land mid-section with the heading already scrolled off -->
+            <a href="#info_container" aria-label="Back to top"><i class='bx bxs-up-arrow' ></i></a>
         </div>
      </footer> 
     

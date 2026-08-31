@@ -52,19 +52,6 @@ var swiper = new Swiper(".mySwiper", {
     },
   });
 
- // scroll Reveal
- ScrollReveal({ 
-    // reset: true ,
-    distance: '80px',
-    duration: 2000,
-    delay: 200
-});
-
-ScrollReveal().reveal('.home-content, .heading', { origin: 'top' });
-ScrollReveal().reveal('.home-img img, .services-container, .portfolio-box, .testimonial-wrapper, contact form', { origin: 'bottom' });
-ScrollReveal().reveal('.home-content h1, .about-img img', { origin: 'left' });
-ScrollReveal().reveal('.home-content h3, .home-content p, .about-content', { origin: 'right' });
-
 // dark mode with local storage
 
 let darkMode = localStorage.getItem("darkMode");
@@ -97,6 +84,36 @@ darkModeToggle.addEventListener("click", () =>{
     console.log(darkMode);
   }
 });
+
+
+// tagline typing effect
+// .tagline-text always holds the real copy, so if this never runs the
+// paragraph still reads normally. We type into an overlay and then hand back.
+(function typeTagline(){
+  const line = document.querySelector('.home-content .tagline');
+  if(!line) return;
+
+  const source = line.querySelector('.tagline-text');
+  const output = line.querySelector('.tagline-typed');
+  if(!source || !output) return;
+
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  const text = source.textContent.trim();
+  let i = 0;
+
+  const tick = () => {
+    output.textContent = text.slice(0, i);
+    if(i++ < text.length){
+      setTimeout(tick, 28);
+    } else {
+      setTimeout(() => line.classList.remove('is-typing'), 1200);
+    }
+  };
+
+  line.classList.add('is-typing');
+  setTimeout(tick, 900);   // let the ScrollReveal entrance land first
+})();
 
 
 //send email
