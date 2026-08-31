@@ -482,13 +482,68 @@ h2{
     .stop.is-down{
         position: static;
         translate: none;
+        display: flex;
         flex-direction: column;
+        align-items: center;
         width: 100%;
         max-width: 34rem;
+
+        /* the wide layout pins this to 0 - the stop is only an anchor point on
+           the road there, and its three pieces hang off it absolutely */
+        height: auto;
     }
 
-    .stop-stem{
+    /* And this is the part that was missing.
+       .stop-node, .stop-stem and .stop-label are all `position: absolute;
+       left: 50%`, because on the road they hang off their stop. Making .stop
+       static without them does not lay them out - it just removes the thing
+       they were anchored to, so all eighteen of them resolve against
+       .road-track instead. Every year, every label, every icon lands on the
+       same 50% / 6.6rem and piles into one unreadable heap in the middle of
+       the section, which is exactly what a phone was showing.
+
+       Static here, so each one sits in its own stop's column. */
+    .stop-node,
+    .stop-label,
+    .stop.is-up .stop-label,
+    .stop.is-down .stop-label{
+        position: static;
+        left: auto;
+        top: auto;
+        bottom: auto;
+        translate: none;
+        margin-left: 0;
+    }
+
+    .stop-label{
+        width: 100%;
+    }
+
+    /* relative rather than static: the dot on the end of the stem is its own
+       absolutely positioned ::after, and it needs the stem to anchor to */
+    .stop-stem,
+    .stop.is-up .stop-stem,
+    .stop.is-down .stop-stem{
+        position: relative;
+        left: auto;
+        top: auto;
+        bottom: auto;
         height: 2.5rem;
+        margin: .6rem 0;
+        margin-left: 0;
+    }
+
+    /* one direction now, so the dot always sits at the label end */
+    .stop.is-up .stop-stem::after,
+    .stop.is-down .stop-stem::after{
+        top: auto;
+        bottom: -.4rem;
+    }
+
+    /* Parked in the gaps the snaking road leaves - bands that do not exist in
+       a vertical list, so they drift across the milestones instead. */
+    .rocket{
+        display: none;
     }
 }
 
